@@ -44,10 +44,12 @@ Route::middleware(['auth'])->group(function () {
             return redirect()->route('admin.servers.index');
         })->name('dashboard');
 
-        // Servers CRUD + agent test
+        // Servers CRUD + SSH / Agent test
         Route::resource('servers', ServerController::class);
+        Route::post('/servers/test-ssh',   [ServerController::class, 'testSsh'])->name('servers.test-ssh');
         Route::post('/servers/test-agent', [ServerController::class, 'testAgent'])->name('servers.test-agent');
-        Route::get('/servers/{server}/browse-agent', [ServerController::class, 'browseAgent'])->name('servers.browse-agent');
+        Route::get('/servers/{server}/browse-server', [ServerController::class, 'browseServer'])->name('servers.browse-server');
+        Route::get('/servers/{server}/browse-agent',  [ServerController::class, 'browseAgent'])->name('servers.browse-agent');
 
         // Log Applications CRUD
         Route::resource('log-apps', LogApplicationController::class);

@@ -92,6 +92,14 @@
                                placeholder="SSH password">
                     </div>
 
+                    {{-- Test SSH button --}}
+                    <div style="margin-bottom:16px;">
+                        <button type="button" id="btn-test-ssh" class="btn btn-secondary" onclick="testSsh()" style="width:100%;">
+                            <i class="fas fa-wifi"></i> Test kết nối SSH
+                        </button>
+                        <div id="ssh-test-result" style="display:none; margin-top:8px; font-size:12px; padding:8px 12px; border-radius:6px;"></div>
+                    </div>
+
                     {{-- Private Key toggle --}}
                     <div style="border: 1px solid var(--border); border-radius:8px; padding:14px; background: var(--bg-primary);">
                         <label style="display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;">
@@ -237,6 +245,57 @@ function togglePrivateKey(checkbox) {
     const section = document.getElementById('private-key-section');
     section.style.display = checkbox.checked ? 'block' : 'none';
     if (!checkbox.checked) document.getElementById('ssh_private_key').value = '';
+}
+
+async function testSsh() {
+    const ip   = document.getElementById('ip_address').value.trim();
+    const port = document.getElementById('ssh_port').value.trim();
+    const user = document.getElementById('ssh_user').value.trim();
+    const pass = document.getElementById('ssh_password').value.trim();
+    const key  = document.getElementById('ssh_private_key')?.value.trim() ?? '';
+    const btn  = document.getElementById('btn-test-ssh');
+    const res  = document.getElementById('ssh-test-result');
+
+    if (!ip || !user) { alert('Nhập IP/hostname và SSH user trước.'); return; }
+
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang kết nối...';
+    res.style.display = 'none';
+
+    try {
+        const resp = await fetch('{{ route('admin.servers.test-ssh') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ ip_address: ip, ssh_port: port || 22, ssh_user: user, ssh_password: pass, ssh_private_key: key }),
+        });
+        const data = await resp.json();
+
+        res.style.display = 'block';
+        if (data.success) {
+            res.style.background = 'var(--success-bg)';
+            res.style.color      = 'var(--success)';
+            res.style.border     = '1px solid var(--success)';
+            res.innerHTML = `<i class="fas fa-check-circle"></i> Kết nối thành công! Host: <strong>${data.data?.hostname ?? 'unknown'}</strong>, Kernel: ${data.data?.kernel ?? 'unknown'}`;
+        } else {
+            res.style.background = 'var(--danger-bg)';
+            res.style.color      = 'var(--danger)';
+            res.style.border     = '1px solid var(--danger)';
+            res.innerHTML = `<i class="fas fa-times-circle"></i> Thất bại: ${data.error}`;
+        }
+    } catch(e) {
+        res.style.display    = 'block';
+        res.style.background = 'var(--danger-bg)';
+        res.style.color      = 'var(--danger)';
+        res.style.border     = '1px solid var(--danger)';
+        res.innerHTML = `<i class="fas fa-times-circle"></i> Lỗi: ${e.message}`;
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-wifi"></i> Test kết nối SSH';
+    }
 }
 
 async function testAgent() {

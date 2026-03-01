@@ -24,14 +24,35 @@ class ServerController extends Controller
     {
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
-            'connection_type' => 'required|in:local,agent',
+            'connection_type' => 'required|in:local,ssh,agent',
+            // SSH
+            'ip_address'      => 'required_if:connection_type,ssh|nullable|string|max:255',
+            'ssh_port'        => 'nullable|integer|min:1|max:65535',
+            'ssh_user'        => 'required_if:connection_type,ssh|nullable|string|max:255',
+            'ssh_password'    => 'nullable|string|max:1024',
+            'ssh_private_key' => 'nullable|string',
+            // Agent
             'agent_url'       => 'required_if:connection_type,agent|nullable|url',
             'agent_token'     => 'nullable|string|max:512',
+            // Common
             'description'     => 'nullable|string',
             'is_active'       => 'boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
+
+        // Clear irrelevant fields based on type
+        if ($validated['connection_type'] !== 'ssh') {
+            $validated['ip_address']      = null;
+            $validated['ssh_port']        = null;
+            $validated['ssh_user']        = null;
+            $validated['ssh_password']    = null;
+            $validated['ssh_private_key'] = null;
+        }
+        if ($validated['connection_type'] !== 'agent') {
+            $validated['agent_url']   = null;
+            $validated['agent_token'] = null;
+        }
 
         Server::create($validated);
 
@@ -54,18 +75,49 @@ class ServerController extends Controller
     {
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
-            'connection_type' => 'required|in:local,agent',
+            'connection_type' => 'required|in:local,ssh,agent',
+            // SSH
+            'ip_address'      => 'required_if:connection_type,ssh|nullable|string|max:255',
+            'ssh_port'        => 'nullable|integer|min:1|max:65535',
+            'ssh_user'        => 'required_if:connection_type,ssh|nullable|string|max:255',
+            'ssh_password'    => 'nullable|string|max:1024',
+            'ssh_private_key' => 'nullable|string',
+            // Agent
             'agent_url'       => 'required_if:connection_type,agent|nullable|url',
             'agent_token'     => 'nullable|string|max:512',
+            // Common
             'description'     => 'nullable|string',
             'is_active'       => 'boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
 
-        // Không xóa token cũ nếu để trống
-        if (empty($validated['agent_token'])) {
-            unset($validated['agent_token']);
+        // Clear irrelevant fields
+        if ($validated['connection_type'] !== 'ssh') {
+            $validated['ip_address']      = null;
+            $validated['ssh_port']        = null;
+            $validated['ssh_user']        = null;
+            $validated['ssh_password']    = null;
+            $validated['ssh_private_key'] = null;
+        } else {
+            // Giữ nguyên password cũ nếu để trống
+            if (empty($validated['ssh_password'])) {
+                unset($validated['ssh_password']);
+            }
+            // Giữ nguyên private key cũ nếu để trống
+            if (empty($validated['ssh_private_key'])) {
+                unset($validated['ssh_private_key']);
+            }
+        }
+
+        if ($validated['connection_type'] !== 'agent') {
+            $validated['agent_url']   = null;
+            $validated['agent_token'] = null;
+        } else {
+            // Giữ nguyên token cũ nếu để trống
+            if (empty($validated['agent_token'])) {
+                unset($validated['agent_token']);
+            }
         }
 
         $server->update($validated);
@@ -83,31 +135,65 @@ class ServerController extends Controller
     }
 
     /**
-     * Kiểm tra kết nối agent (AJAX).
+     * Test SSH connection (AJAX).
      */
-    public function testAgent(Request $request)
+    public function testSsh(Request $request)
     {
-        $url = $request->input('agent_url');
-        if (! $url) {
-            return response()->json(['success' => false, 'error' => 'agent_url is required'], 422);
-        }
+        $request->validate([
+            'ip_address'      => 'required|string',
+            'ssh_port'        => 'nullable|integer',
+            'ssh_user'        => 'required|string',
+            'ssh_password'    => 'nullable|string',
+            'ssh_private_key' => 'nullable|string',
+        ]);
 
-        $result = app(LogReaderService::class)->pingAgent($url);
+        $result = app(LogReaderService::class)->pingSshRaw(
+            host:       $request->input('ip_address'),
+            port:       (int) $request->input('ssh_port', 22),
+            user:       $request->input('ssh_user'),
+            password:   $request->input('ssh_password', ''),
+            privateKey: $request->input('ssh_private_key', ''),
+        );
+
         return response()->json($result);
     }
 
     /**
-     * Browse thư mục trên remote server qua agent (AJAX).
-     * Dùng để chọn đường dẫn log khi tạo LogApplication.
+     * Kiểm tra kết nối agent (AJAX).
      */
-    public function browseAgent(Request $request, Server $server)
+    public function testAgent(Request $request)
     {
-        if (! $server->usesAgent()) {
-            return response()->json(['success' => false, 'error' => 'Server không dùng HTTP Agent'], 422);
+        $url   = $request->input('agent_url');
+        $token = $request->input('agent_token', '');
+
+        if (! $url) {
+            return response()->json(['success' => false, 'error' => 'agent_url is required'], 422);
+        }
+
+        $result = app(LogReaderService::class)->pingAgent($url, $token);
+        return response()->json($result);
+    }
+
+    /**
+     * Browse thư mục trên remote server (AJAX).
+     * Hỗ trợ cả SSH và Agent.
+     */
+    public function browseServer(Request $request, Server $server)
+    {
+        if ($server->isLocal()) {
+            return response()->json(['success' => false, 'error' => 'Server local không hỗ trợ browse từ xa.'], 422);
         }
 
         $path   = $request->input('path', '/var/log');
-        $result = app(LogReaderService::class)->listAgentDirectory($server, $path);
+        $result = app(LogReaderService::class)->listDirectory($server, $path);
         return response()->json($result);
+    }
+
+    /**
+     * @deprecated Dùng browseServer() thay thế.
+     */
+    public function browseAgent(Request $request, Server $server)
+    {
+        return $this->browseServer($request, $server);
     }
 }

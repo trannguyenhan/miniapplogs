@@ -26,3 +26,4 @@ DOCKER_HUB.md
 .env
 .env.bk
 build.sh
+composer.lock
