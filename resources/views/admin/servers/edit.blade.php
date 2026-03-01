@@ -57,7 +57,7 @@
                     <div class="form-group">
                         <label class="form-label" for="agent_url">Agent URL <span class="required">*</span></label>
                         <div style="display:flex; gap:8px;">
-                            <input type="url" id="agent_url" name="agent_url" class="form-control"
+                            <input type="text" id="agent_url" name="agent_url" class="form-control"
                                    value="{{ old('agent_url', $server->agent_url) }}"
                                    placeholder="http://192.168.1.100:9876">
                             <button type="button" id="btn-test-agent" class="btn btn-secondary" onclick="testAgent()" style="white-space:nowrap;">
@@ -139,7 +139,16 @@ function setConnType(type) {
         document.querySelector(`input[name="connection_type"][value="${t}"]`).checked = (t === type);
     });
     document.getElementById('agent-fields').style.display = type === 'agent' ? 'block' : 'none';
+    
+    // Disable inputs inside hidden sections
+    document.querySelectorAll('#agent-fields input, #agent-fields button').forEach(el => el.disabled = type !== 'agent');
 }
+
+// Ensure correct state on page load
+window.addEventListener('DOMContentLoaded', () => {
+    const currentType = document.querySelector('input[name="connection_type"]:checked')?.value || 'local';
+    setConnType(currentType);
+});
 
 async function testAgent() {
     const url   = document.getElementById('agent_url').value.trim();
