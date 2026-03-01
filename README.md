@@ -1,217 +1,196 @@
-# MiniAppLogs - Hệ thống xem log server
+# 🖥️ MiniAppLogs – Laravel Log Viewer
 
-Ứng dụng Laravel để xem log realtime từ nhiều server kết nối qua SSH (private IP).
-
-## Tính năng
-
-- 🔐 **Phân quyền**: Admin (cấu hình) & User (chỉ xem)
-- 🖥️ **Quản lý server**: Thêm/sửa/xóa server với thông tin SSH
-- 📋 **Quản lý ứng dụng**: Khai báo tên app và path log
-- 📄 **Xem log**: 1000 dòng cuối, nút Reload + Auto-refresh 10s
-- 🔍 **Tìm kiếm**: Filter theo từ khóa trong log
-- 🎨 **Dark Theme**: UI hiện đại, color-coded theo log level
+A web application for real-time server log monitoring. Supports reading log files securely via a lightweight **HTTP Agent** or from local paths.
 
 ---
 
-## 🐳 Docker – Build & Push lên Docker Hub
+## ✨ Features
 
-> Thực hiện trên máy dev hoặc CI/CD. Server deploy **không cần** source code.
-
-### Yêu cầu
-- Docker >= 24 (có sẵn `buildx`)
-- Đã đăng nhập Docker Hub: `docker login`
-
----
-
-### 1. Đặt biến môi trường
-
-```bash
-# Tên image trên Docker Hub (đổi thành username của bạn)
-export IMAGE=trannguyenhan/miniapplogs
-
-# Tag phiên bản
-export VERSION=1.0.0
-```
+- 📄 View the **last 1000 lines** of any log file
+- 🔄 **Auto-refresh** every 10 seconds or manual reload
+- 🔍 **Search / filter** by keyword in the browser
+- 🔌 **Lightweight HTTP Agent** – secure streaming without SSH keys
+- 👥 **Role-based access control** – Admin / User
+- 🌑 **Dark mode** UI with color-coded log levels
+- 🌐 **Multi-language** – English & Vietnamese
+- 🗄️ **SQLite by default** – no database server required
 
 ---
 
-### 2. Build image
+## 🚀 Option 1 – SQLite (recommended, simplest)
 
-```bash
-docker build \
-  --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-  --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
-  --build-arg VERSION=${VERSION} \
-  -t ${IMAGE}:${VERSION} \
-  -t ${IMAGE}:latest \
-  .
-```
+No database server needed. Data is stored in a local SQLite file inside the container volume.
 
-> **Multi-platform** (build cho cả `linux/amd64` và `linux/arm64`):
->
-> ```bash
-> docker buildx build \
->   --platform linux/amd64,linux/arm64 \
->   --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
->   --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
->   --build-arg VERSION=${VERSION} \
->   -t ${IMAGE}:${VERSION} \
->   -t ${IMAGE}:latest \
->   --push \
->   .
-> ```
-> *(Lệnh này build + push một bước, không cần bước 3)*
-
----
-
-### 3. Push lên Docker Hub
-
-```bash
-docker push ${IMAGE}:${VERSION}
-docker push ${IMAGE}:latest
-```
-
----
-
-### 4. Kiểm tra image đã push
-
-```bash
-docker pull ${IMAGE}:latest
-docker inspect ${IMAGE}:latest | grep -A 10 '"Labels"'
-```
-
----
-
-## 🚀 Deploy bằng Docker Compose
-
-> Trên server chỉ cần 2 file: `docker-compose.yml` và `.env`
-
-### 1. Chuẩn bị file `.env`
-
-```bash
-cp .env.docker .env
-# Chỉnh sửa các biến: APP_KEY, DB_PASSWORD, APP_URL, IMAGE, VERSION...
-```
-
-Các biến quan trọng trong `.env`:
+### 1. Create `.env`
 
 ```env
-DOCKER_IMAGE=trannguyenhan/miniapplogs
-DOCKER_TAG=latest          # hoặc 1.0.0
-
-APP_KEY=base64:...         # Lấy bằng: php artisan key:generate --show
-APP_URL=http://your-domain.com
-APP_PORT=8080
-
-DB_DATABASE=miniapplogs
-DB_USERNAME=miniapplogs
-DB_PASSWORD=strong_password_here
-DB_ROOT_PASSWORD=strong_root_password
+APP_URL=http://your-server-ip:8080
 ```
 
-### 2. Pull image & chạy
+That's it. Everything else is automatic.
 
-```bash
-docker compose pull        # pull image mới nhất từ Docker Hub
-docker compose up -d       # chạy nền
-docker compose logs -f app # xem logs
+### 2. Create `docker-compose.yml`
+
+```yaml
+services:
+  app:
+    image: trannguyenhan/miniapplogs:latest
+    container_name: miniapplogs_app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      APP_LOCALE: ${APP_LOCALE:-en}
+    volumes:
+      - app_storage:/var/www/html/storage
+
+volumes:
+  app_storage:
 ```
 
-### 3. Các lệnh hữu ích
+### 3. Run
 
 ```bash
-# Xem trạng thái
-docker compose ps
-
-# Chạy artisan command
-docker compose exec app php artisan migrate --status
-docker compose exec app php artisan db:seed
-
-# Restart
-docker compose restart app
-
-# Dừng và xóa container (giữ data)
-docker compose down
-
-# Dừng và xóa cả data (cẩn thận!)
-docker compose down -v
+docker compose up -d
+docker compose logs -f app   # watch startup
 ```
 
 ---
 
-## 💻 Cài đặt thủ công (không dùng Docker)
+## 🚀 Option 2 – MySQL
 
-### Yêu cầu
+Use this if you prefer a dedicated database server or need to share the database.
 
-- PHP >= 8.2 với extensions: `pdo_mysql`, `openssl`, `bcmath`, `gd`, `zip`
-- MySQL >= 8.0 / MariaDB
-- Composer, Node.js >= 18
-
-### 1. Cấu hình database trong `.env`
+### 1. Create `.env`
 
 ```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=miniapplogs
-DB_USERNAME=root
-DB_PASSWORD=your_password_here
+APP_URL=http://your-server-ip:8080
+
+DB_PASSWORD=change_me_strong_password
+DB_ROOT_PASSWORD=change_me_root_password
 ```
 
-### 2. Tạo database
+### 2. Create `docker-compose.yml`
+
+```yaml
+services:
+  app:
+    image: trannguyenhan/miniapplogs:latest
+    container_name: miniapplogs_app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      APP_LOCALE: ${APP_LOCALE:-en}
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: miniapplogs
+      DB_USERNAME: miniapplogs
+      DB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - app_storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    container_name: miniapplogs_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: miniapplogs
+      MYSQL_USER: miniapplogs
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  app_storage:
+  db_data:
+```
+
+### 3. Run
 
 ```bash
-mysql -u root -p -e "CREATE DATABASE miniapplogs CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+docker compose up -d
+docker compose logs -f app
 ```
-
-### 3. Cài đặt dependencies
-
-```bash
-composer install
-npm install && npm run build
-php artisan key:generate
-```
-
-### 4. Chạy migration + seed
-
-```bash
-php artisan migrate --seed
-```
-
-### 5. Khởi động
-
-```bash
-php artisan serve
-```
-
-Truy cập: http://localhost:8000
 
 ---
 
-## Tài khoản mặc định
+## 🔌 Reading Logs via HTTP Agent
 
-| Role  | Email                   | Mật khẩu     |
-|-------|-------------------------|--------------|
-| Admin | admin@miniapplogs.local | Admin@123456 |
-| User  | user@miniapplogs.local  | User@123456  |
+MiniAppLogs connects to remote servers using a lightweight HTTP Agent. This agent allows the app to securely stream logs over your LAN without exposing SSH ports or passwords.
+
+### 1. Install the Agent on your server
+
+Run this one-liner command on the server where your logs are located (including the host machine running Docker):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/trannguyenhan/miniapplogs/refs/heads/main/agent/install.sh | sudo bash -s -- --token your-secret-token
+```
+
+*(The agent is a pure Bash script with `socat`, extremely lightweight and uses < 1MB RAM).*
+
+### 2. Add the Server to MiniAppLogs
+
+Go to the **Add Server** page in the MiniAppLogs UI and enter:
+- **Connection Type:** `HTTP Agent`
+- **Agent URL:** `http://192.168.1.100:9876` *(replace with your server's IP)*
+- **Agent Token:** `your-secret-token`
+
+### 3. Browse Logs
+
+When adding a Log Application, you can click the **Browse 🗂️** button to visually explore the remote server's filesystem and select your log files!
 
 ---
 
-## Hướng dẫn sử dụng
+## 🔑 Default Credentials
 
-### Thêm Server (Admin)
-1. Vào **Admin > Quản lý Server** → **Thêm server**
-2. Điền tên, IP private, SSH port, user
-3. Chọn xác thực: Password SSH hoặc Private Key
+| Role  | Email | Password |
+|---|---|---|
+| Admin | `admin@miniapplogs.local` | `Admin@123456` |
+| User  | `user@miniapplogs.local`  | `User@123456`  |
 
-### Thêm Log Application (Admin)
-1. Vào **Admin > Quản lý Log App** → **Thêm ứng dụng**
-2. Chọn server, điền tên và **đường dẫn tuyệt đối** tới file log
-   - `/var/log/nginx/access.log`
-   - `/home/app/storage/logs/laravel.log`
+> ⚠️ Change passwords immediately after first login!
 
-### Xem Log
-1. Trang chủ → Chọn ứng dụng
-2. Click **Reload** để tải log mới nhất
-3. Click badge **Auto-refresh** để bật tự động reload (10s)
-4. Dùng thanh tìm kiếm để lọc theo từ khóa
+---
+
+## ⚙️ Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `APP_URL` | `http://localhost:8080` | Public URL of the app |
+| `APP_PORT` | `8080` | Host port to expose |
+| `APP_LOCALE` | `en` | UI language: `en` or `vi` |
+| `DB_CONNECTION` | `sqlite` | Use `mysql` to switch to MySQL |
+| `DB_PASSWORD` | — | Required only for MySQL |
+| `DB_ROOT_PASSWORD` | — | Required only for MySQL |
+
+> `APP_KEY`, database migrations, and initial seeding run **automatically** on first boot.
+
+---
+
+## 📦 Tags
+
+| Tag | Description |
+|---|---|
+| `latest` | Latest stable build |
+| `1.0.0` | First stable release |
+
+---
+
+## 🔗 Links
+
+- **Source code**: [github.com/trannguyenhan/miniapplogs](https://github.com/trannguyenhan/miniapplogs)
+- **Docker Hub**: [hub.docker.com/r/trannguyenhan/miniapplogs](https://hub.docker.com/r/trannguyenhan/miniapplogs)
