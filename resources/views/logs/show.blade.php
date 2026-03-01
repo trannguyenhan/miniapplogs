@@ -4,8 +4,10 @@
 
 @section('breadcrumb')
     <a href="{{ route('logs.index') }}" style="color: var(--text-secondary); text-decoration:none;">Danh sách</a>
+    @if(auth()->user()->role === 'admin')
     <span class="sep">/</span>
     <span style="color: var(--text-muted);">{{ $logApp->server->name }}</span>
+    @endif
     <span class="sep">/</span>
     <span class="current">{{ $logApp->name }}</span>
 @endsection
@@ -212,6 +214,7 @@
 @endpush
 
 @section('content')
+@if(auth()->user()->role === 'admin')
 <div class="log-meta-bar">
     <div class="log-meta-item">
         <i class="fas fa-server"></i>
@@ -232,6 +235,7 @@
     </div>
     @endif
 </div>
+@endif
 
 <div class="log-controls">
     <div class="log-controls-left">
@@ -274,7 +278,11 @@
 
     <div class="log-header">
         <i class="fas fa-file-code" style="color: var(--accent); font-size:12px;"></i>
+        @if(auth()->user()->role === 'admin')
         <span class="log-header-title">{{ $logApp->log_path }}</span>
+        @else
+        <span class="log-header-title">{{ $logApp->name }}</span>
+        @endif
         <span class="log-stats" id="log-stats">Đang tải...</span>
     </div>
 

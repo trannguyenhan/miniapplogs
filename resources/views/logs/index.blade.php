@@ -112,7 +112,9 @@
                 <div class="server-icon"><i class="fas fa-server"></i></div>
                 <div>
                     <div class="server-title">{{ $server->name }}</div>
+                    @if(auth()->user()->role === 'admin')
                     <div class="server-ip"><i class="fas fa-network-wired" style="margin-right:4px;"></i>{{ $server->ip_address }}{{ $server->ssh_port ? ':'.$server->ssh_port : '' }}</div>
+                    @endif
                 </div>
                 <div style="margin-left: auto;">
                     <span class="badge badge-success"><i class="fas fa-circle" style="font-size:7px;"></i> {{ __('app.online') }}</span>
@@ -125,7 +127,9 @@
                         <i class="fas fa-file-code" style="color: var(--accent); font-size:13px;"></i>
                         {{ $app->name }}
                     </div>
+                    @if(auth()->user()->role === 'admin')
                     <div class="app-path"><i class="fas fa-folder" style="margin-right:4px;"></i>{{ $app->log_path }}</div>
+                    @endif
                     @if($app->description)
                         <div class="app-desc">{{ $app->description }}</div>
                     @endif
