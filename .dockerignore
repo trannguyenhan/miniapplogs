@@ -1,0 +1,56 @@
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore Git
+.git
+.gitignore
+.gitattributes
+
+# Ignore Node
+node_modules/
+
+# Ignore vendor (installed in Dockerfile)
+vendor/
+
+# Ignore built assets (rebuilt in Dockerfile)
+public/build/
+public/hot/
+
+# Ignore local env files
+.env
+.env.*
+!.env.example
+
+# Ignore IDE / editor config
+.idea/
+.vscode/
+.nova/
+.fleet/
+.zed/
+.editorconfig
+
+# Ignore test and dev files
+phpunit.xml
+.phpunit.result.cache
+.phpunit.cache/
+tests/
+
+# Docker meta files (không cần bên trong image)
+# Chú ý: thư mục docker/ KHÔNG ignore vì Dockerfile cần COPY docker/nginx, docker/php, docker/entrypoint.sh
+Dockerfile
+docker-compose*.yml
+.dockerignore
+build.sh
+
+# Ignore logs and runtime
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+
+# Ignore README and docs
+README.md
+*.md
+
+bootstrap/cache/*.php
