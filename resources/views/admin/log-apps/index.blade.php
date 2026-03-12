@@ -50,6 +50,8 @@
                     <td>
                         @if($app->log_type === 'pattern')
                             <span class="badge badge-warning" title="Dựa theo ngày">{!! __('app.log_type_pattern') !!}</span>
+                        @elseif($app->log_type === 'docker')
+                            <span class="badge badge-secondary" title="Docker Container"><i class="fab fa-docker" style="color:#2496ed;"></i> Docker</span>
                         @else
                             <span style="font-size:12px; color:var(--text-secondary);">{{ __('app.log_type_file') }}</span>
                         @endif

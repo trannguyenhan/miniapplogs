@@ -12,19 +12,27 @@ class LogReaderService
     /**
      * Đọc log: tự động chọn local, SSH hoặc Agent tùy cấu hình server.
      */
-    public function readLogs(Server $server, string $logPath, int $lines = 1000): array
+    public function readLogs(Server $server, string $logPath, int $lines = 1000, string $logType = 'file'): array
     {
-        $logPath = $this->resolvePath($logPath);
+        if ($logType !== 'docker') {
+            $logPath = $this->resolvePath($logPath);
+        }
 
         if ($server->isLocal()) {
-            return $this->readLocalLogs($logPath, $lines);
+            return $logType === 'docker' 
+                ? $this->readLocalDockerLogs($logPath, $lines) 
+                : $this->readLocalLogs($logPath, $lines);
         }
 
         if ($server->usesSsh()) {
-            return $this->readSshLogs($server, $logPath, $lines);
+            return $logType === 'docker' 
+                ? $this->readSshDockerLogs($server, $logPath, $lines) 
+                : $this->readSshLogs($server, $logPath, $lines);
         }
 
-        return $this->readAgentLogs($server, $logPath, $lines);
+        return $logType === 'docker'
+            ? $this->readAgentDockerLogs($server, $logPath, $lines)
+            : $this->readAgentLogs($server, $logPath, $lines);
     }
 
     /**
@@ -226,6 +234,63 @@ class LogReaderService
             $response = $request->get(rtrim($server->agent_url, '/') . '/logs', [
                 'path'  => $logPath,
                 'lines' => $lines,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return [
+                    'success' => true,
+                    'lines'   => $data['lines'] ?? [],
+                    'count'   => $data['count']  ?? 0,
+                ];
+            }
+
+            $error = $response->json('error') ?? $response->body();
+            return ['success' => false, 'error' => "Agent lỗi [{$response->status()}]: {$error}", 'lines' => []];
+
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Không thể kết nối tới agent: ' . $e->getMessage(), 'lines' => []];
+        }
+    }
+
+    protected function readLocalDockerLogs(string $container, int $lines = 1000): array
+    {
+        try {
+            $output = shell_exec("docker logs --tail " . (int)$lines . " " . escapeshellarg($container) . " 2>&1");
+            if ($output === null) return ['success' => false, 'error' => 'Chạy docker logs thất bại hoặc container không có log', 'lines' => []];
+            $logLines = array_filter(explode("\n", rtrim($output, "\n")), fn($val) => !is_null($val));
+            return ['success' => true, 'path' => $container, 'lines' => array_values($logLines), 'count' => count($logLines)];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage(), 'lines' => []];
+        }
+    }
+
+    protected function readSshDockerLogs(Server $server, string $container, int $lines = 1000): array
+    {
+        try {
+            $ssh = $this->makeSshConnection($server);
+            if (!$ssh) return ['success' => false, 'error' => 'SSH connection failed', 'lines' => []];
+
+            $output = $ssh->exec("docker logs --tail " . (int)$lines . " " . escapeshellarg($container) . " 2>&1");
+            if ($output === false) return ['success' => false, 'error' => 'Execute command failed'];
+            $logLines = array_filter(explode("\n", rtrim($output, "\n")), fn($val) => !is_null($val));
+            return ['success' => true, 'path' => $container, 'lines' => array_values($logLines), 'count' => count($logLines)];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage(), 'lines' => []];
+        }
+    }
+
+    protected function readAgentDockerLogs(Server $server, string $container, int $lines = 1000): array
+    {
+        try {
+            $request = Http::timeout(15)->withHeaders(['Accept' => 'application/json']);
+            if ($server->agent_token) {
+                $request = $request->withToken($server->agent_token);
+            }
+
+            $response = $request->get(rtrim($server->agent_url, '/') . '/docker-logs', [
+                'container' => $container,
+                'lines'     => $lines,
             ]);
 
             if ($response->successful()) {

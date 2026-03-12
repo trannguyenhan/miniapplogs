@@ -55,6 +55,7 @@
                     <select id="log_type" name="log_type" class="form-control" required onchange="togglePathHint()">
                         <option value="file" {{ old('log_type') == 'file' ? 'selected' : '' }}>File cố định</option>
                         <option value="pattern" {{ old('log_type') == 'pattern' ? 'selected' : '' }}>Theo ngày (Pattern)</option>
+                        <option value="docker" {{ old('log_type') == 'docker' ? 'selected' : '' }}>Docker Container</option>
                     </select>
                     @error('log_type') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
@@ -79,6 +80,9 @@
                     <div class="form-hint" id="pattern-hint" style="display:none; color: var(--accent);">
                         Hỗ trợ pattern ngày: <code>{Y-m-d}</code>, <code>{dmY}</code>, <code>{Ymd}</code>... <br>
                         VD: <code>/var/log/app-{Y-m-d}.log</code> -> <code>/var/log/app-{{ date('Y-m-d') }}.log</code>
+                    </div>
+                    <div class="form-hint" id="docker-hint" style="display:none; color: var(--warning);">
+                        Nhập tên hoặc ID của Docker container. VD: <code>nginx-proxy</code>, <code>mysql-db</code>
                     </div>
                     @error('log_path') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
@@ -305,13 +309,18 @@ function togglePathHint() {
     const type = document.getElementById('log_type').value;
     const pathHint = document.getElementById('path-hint');
     const patternHint = document.getElementById('pattern-hint');
+    const dockerHint = document.getElementById('docker-hint');
+
+    pathHint.style.display = 'none';
+    patternHint.style.display = 'none';
+    if (dockerHint) dockerHint.style.display = 'none';
 
     if (type === 'pattern') {
-        pathHint.style.display = 'none';
         patternHint.style.display = 'block';
+    } else if (type === 'docker') {
+        if (dockerHint) dockerHint.style.display = 'block';
     } else {
         pathHint.style.display = 'block';
-        patternHint.style.display = 'none';
     }
 }
 

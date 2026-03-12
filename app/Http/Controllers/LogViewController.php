@@ -49,7 +49,7 @@ class LogViewController extends Controller
         }
 
         $lines  = min(request()->integer('lines', 1000), 5000);
-        $result = $this->logReader->readLogs($logApp->server, $logApp->log_path, $lines);
+        $result = $this->logReader->readLogs($logApp->server, $logApp->log_path, $lines, $logApp->log_type ?: 'file');
 
         return response()->json(array_merge($result, [
             'app_name'   => $logApp->name,

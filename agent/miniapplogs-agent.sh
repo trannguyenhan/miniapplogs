@@ -111,6 +111,30 @@ handle() {
             "{\"success\":true,\"path\":\"$(json_str "$path")\",\"lines\":${json_arr},\"count\":${count}}"
     }
 
+    # ── Endpoint: /docker-logs ────────────────────────────────────────────────
+    ep_docker_logs() {
+        local container="${QS_container:-}" lines="${QS_lines:-1000}"
+        [[ -z "$container" ]] && { respond "400 Bad Request" '{"error":"Missing param: container"}'; return; }
+        
+        local json_arr count
+        # docker logs in ra stdout va stderr, redirect vao awk
+        json_arr=$(docker logs --tail "$lines" "$container" 2>&1 | awk '
+            BEGIN { printf "[" }
+            {
+                if (NR > 1) printf ","
+                gsub(/\\/, "\\\\"); gsub(/"/, "\\\""); gsub(/\r/, "")
+                printf "\"" $0 "\""
+            }
+            END { printf "]" }
+        ')
+        count=$(docker logs --tail "$lines" "$container" 2>&1 | wc -l)
+        
+        # bat loi neu docker tra ve command not found hoac container not found
+        # neu container ko ton tai, log se kha ngan 
+        respond "200 OK" \
+            "{\"success\":true,\"path\":\"$(json_str "$container")\",\"lines\":${json_arr},\"count\":${count}}"
+    }
+
     # ── Endpoint: /list ───────────────────────────────────────────────────────
     ep_list() {
         local path="${QS_path:-/var/log}"
@@ -228,12 +252,13 @@ handle() {
     fi
 
     case "$endpoint" in
-        /health)  ep_health ;;
-        /logs)    ep_logs ;;
-        /list)    ep_list ;;
-        /info)    ep_info ;;
-        /execute) ep_execute ;;
-        *)        respond "404 Not Found" "{\"error\":\"Unknown: $endpoint\"}" ;;
+        /health)      ep_health ;;
+        /logs)        ep_logs ;;
+        /docker-logs) ep_docker_logs ;;
+        /list)        ep_list ;;
+        /info)        ep_info ;;
+        /execute)     ep_execute ;;
+        *)            respond "404 Not Found" "{\"error\":\"Unknown: $endpoint\"}" ;;
     esac
 
 } # end handle()
