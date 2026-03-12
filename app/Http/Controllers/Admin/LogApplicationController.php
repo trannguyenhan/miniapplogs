@@ -24,14 +24,18 @@ class LogApplicationController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'server_id'   => 'required|exists:servers,id',
-            'name'        => 'required|string|max:255',
-            'log_path'    => 'required|string|max:1000',
-            'description' => 'nullable|string',
-            'is_active'   => 'boolean',
+            'server_id'     => 'required|exists:servers,id',
+            'name'          => 'required|string|max:255',
+            'log_path'      => 'required|string|max:1000',
+            'log_type'      => 'required|in:file,pattern',
+            'script_path'   => 'nullable|string|max:1000',
+            'allowed_roles' => 'nullable|string',
+            'description'   => 'nullable|string',
+            'is_active'     => 'boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['allowed_roles'] = $request->input('allowed_roles', 'admin');
 
         $app = LogApplication::create($validated);
 
@@ -54,14 +58,18 @@ class LogApplicationController extends Controller
     public function update(Request $request, LogApplication $logApp)
     {
         $validated = $request->validate([
-            'server_id'   => 'required|exists:servers,id',
-            'name'        => 'required|string|max:255',
-            'log_path'    => 'required|string|max:1000',
-            'description' => 'nullable|string',
-            'is_active'   => 'boolean',
+            'server_id'     => 'required|exists:servers,id',
+            'name'          => 'required|string|max:255',
+            'log_path'      => 'required|string|max:1000',
+            'log_type'      => 'required|in:file,pattern',
+            'script_path'   => 'nullable|string|max:1000',
+            'allowed_roles' => 'nullable|string',
+            'description'   => 'nullable|string',
+            'is_active'     => 'boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['allowed_roles'] = $request->input('allowed_roles', 'admin');
 
         $logApp->update($validated);
 

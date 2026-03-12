@@ -58,4 +58,22 @@ class LogViewController extends Controller
             'fetched_at' => now()->format('d/m/Y H:i:s'),
         ]));
     }
+
+    /**
+     * Thực thi script pull code/restart
+     */
+    public function executeScript(LogApplication $logApp)
+    {
+        if (!$logApp->script_path) {
+            return response()->json(['success' => false, 'error' => 'Ứng dụng này không có script được cấu hình.']);
+        }
+
+        if (!$logApp->canRunScript(auth()->user())) {
+            return response()->json(['success' => false, 'error' => 'Bạn không có quyền thực thi script này.'], 403);
+        }
+
+        $result = $this->logReader->runScript($logApp->server, $logApp->script_path);
+
+        return response()->json($result);
+    }
 }

@@ -256,6 +256,12 @@
             <option value="2000">2000 dòng</option>
             <option value="5000">5000 dòng</option>
         </select>
+
+        @if($logApp->script_path && $logApp->canRunScript(auth()->user()))
+        <button class="btn btn-warning" id="btn-execute" onclick="executeScript()">
+            <i class="fas fa-terminal" id="exec-icon"></i> Run Script
+        </button>
+        @endif
     </div>
     <div class="log-controls-right">
         <div class="status-indicator">
@@ -300,6 +306,7 @@
 @push('scripts')
 <script>
 const FETCH_URL = "{{ route('logs.fetch', $logApp) }}";
+const EXECUTE_URL = "{{ route('logs.execute', $logApp) }}";
 let autoRefreshInterval = null;
 let isLoading = false;
 let rawLines = [];
@@ -478,6 +485,44 @@ function clearSearch() {
     document.getElementById('search-input').value = '';
     document.getElementById('search-count').textContent = '';
     if (rawLines.length) renderLogs(rawLines);
+}
+
+async function executeScript() {
+    if (!confirm('Bạn có chắc muốn chạy script này không? (VD: Pull code & Restart)')) return;
+
+    const btn = document.getElementById('btn-execute');
+    const icon = document.getElementById('exec-icon');
+    if (!btn) return;
+
+    btn.disabled = true;
+    icon.className = 'fas fa-spinner fa-spin';
+    setStatus('loading', 'Đang thực thi script...');
+
+    try {
+        const res = await fetch(EXECUTE_URL, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            setStatus('success', 'Script hoàn thành');
+            alert('Thực thi thành công!\n\nOutput:\n' + (data.output || 'Không có output'));
+            loadLogs(); // Reload logs after script
+        } else {
+            setStatus('error', 'Script lỗi');
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (e) {
+        setStatus('error', 'Lỗi kết nối');
+        alert('Lỗi kết nối: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        icon.className = 'fas fa-terminal';
+    }
 }
 
 // Init

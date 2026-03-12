@@ -133,6 +133,15 @@ return [
     'no_apps_found'              => 'No applications yet.',
     'confirm_delete_app'         => 'Delete this application?',
     'server_offline'             => 'Server offline',
+    'log_type'                   => 'Log Type',
+    'log_type_file'              => 'Fixed File',
+    'log_type_pattern'           => 'Daily Pattern',
+    'log_path_pattern_hint'      => 'Supports pattern: {Y-m-d}, {dmY}, {Ymd}...',
+    'script_path'                => 'Execute Script (.sh)',
+    'script_path_hint'           => 'Path to .sh file on server (e.g. deploy.sh)',
+    'allowed_roles'              => 'Script execution roles',
+    'btn_run_script'             => 'Run Script',
+    'confirm_run_script'         => 'Are you sure you want to run this script?',
 
     // Users
     'users'                      => 'Users',

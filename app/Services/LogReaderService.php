@@ -14,6 +14,8 @@ class LogReaderService
      */
     public function readLogs(Server $server, string $logPath, int $lines = 1000): array
     {
+        $logPath = $this->resolvePath($logPath);
+
         if ($server->isLocal()) {
             return $this->readLocalLogs($logPath, $lines);
         }
@@ -23,6 +25,30 @@ class LogReaderService
         }
 
         return $this->readAgentLogs($server, $logPath, $lines);
+    }
+
+    /**
+     * Thực thi script trên server.
+     */
+    public function runScript(Server $server, string $scriptPath): array
+    {
+        if ($server->isLocal()) {
+            return $this->runLocalScript($scriptPath);
+        }
+
+        if ($server->usesSsh()) {
+            return $this->runSshScript($server, $scriptPath);
+        }
+
+        return $this->runAgentScript($server, $scriptPath);
+    }
+
+    protected function resolvePath(string $path): string
+    {
+        // Support {Y-m-d}, {Ymd}, {dmY}, etc.
+        return preg_replace_callback('/\{([a-zA-Z\-_]+)\}/', function ($matches) {
+            return date($matches[1]);
+        }, $path);
     }
 
     // ── Local ─────────────────────────────────────────────────────────────────
@@ -322,6 +348,48 @@ class LogReaderService
             ]);
             if ($response->successful()) {
                 return ['success' => true] + $response->json();
+            }
+            return ['success' => false, 'error' => $response->json('error') ?? $response->body()];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    protected function runLocalScript(string $scriptPath): array
+    {
+        try {
+            if (!file_exists($scriptPath)) {
+                return ['success' => false, 'error' => "Script không tồn tại: {$scriptPath}"];
+            }
+            $output = shell_exec("bash " . escapeshellarg($scriptPath) . " 2>&1");
+            return ['success' => true, 'output' => $output];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    protected function runSshScript(Server $server, string $scriptPath): array
+    {
+        try {
+            $ssh = $this->makeSshConnection($server);
+            if (!$ssh) return ['success' => false, 'error' => 'SSH connection failed'];
+            $output = $ssh->exec("bash " . escapeshellarg($scriptPath) . " 2>&1");
+            return ['success' => true, 'output' => $output];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    protected function runAgentScript(Server $server, string $scriptPath): array
+    {
+        try {
+            $request = Http::timeout(60)->withHeaders(['Accept' => 'application/json']);
+            if ($server->agent_token) $request = $request->withToken($server->agent_token);
+            $response = $request->post(rtrim($server->agent_url, '/') . '/execute', [
+                'path' => $scriptPath,
+            ]);
+            if ($response->successful()) {
+                return ['success' => true, 'output' => $response->json('output')];
             }
             return ['success' => false, 'error' => $response->json('error') ?? $response->body()];
         } catch (\Exception $e) {

@@ -20,10 +20,13 @@
             <div class="card-body">
                 <div class="form-group">
                     <label class="form-label" for="server_id">Server <span class="required">*</span></label>
-                    <select id="server_id" name="server_id" class="form-control" required>
+                    <select id="server_id" name="server_id" class="form-control" required onchange="onServerChange(this)">
                         <option value="">-- Chọn server --</option>
                         @foreach($servers as $server)
-                            <option value="{{ $server->id }}" {{ old('server_id', $logApp->server_id) == $server->id ? 'selected' : '' }}>
+                            <option value="{{ $server->id }}"
+                                    data-type="{{ $server->connection_type }}"
+                                    data-browse="{{ $server->connection_type === 'agent' ? route('admin.servers.browse-agent', $server) : '' }}"
+                                    {{ old('server_id', $logApp->server_id) == $server->id ? 'selected' : '' }}>
                                 {{ $server->name }} ({{ $server->ip_address }})
                             </option>
                         @endforeach
@@ -37,13 +40,92 @@
                     @error('name') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
 
+                {{-- Log Type --}}
+                <div class="form-group">
+                    <label class="form-label" for="log_type">Loại Log <span class="required">*</span></label>
+                    <select id="log_type" name="log_type" class="form-control" required onchange="togglePathHint()">
+                        <option value="file" {{ old('log_type', $logApp->log_type) == 'file' ? 'selected' : '' }}>File cố định</option>
+                        <option value="pattern" {{ old('log_type', $logApp->log_type) == 'pattern' ? 'selected' : '' }}>Theo ngày (Pattern)</option>
+                    </select>
+                    @error('log_type') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
                 <div class="form-group">
                     <label class="form-label" for="log_path">Đường dẫn Log <span class="required">*</span></label>
-                    <input type="text" id="log_path" name="log_path" class="form-control"
-                           value="{{ old('log_path', $logApp->log_path) }}"
-                           style="font-family:'JetBrains Mono',monospace; font-size:13px;"
-                           required>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="log_path" name="log_path" class="form-control"
+                               value="{{ old('log_path', $logApp->log_path) }}"
+                               style="font-family:'JetBrains Mono',monospace; font-size:13px;"
+                               required>
+                        <button type="button" id="btn-browse" class="btn btn-secondary"
+                                onclick="openBrowser()" style="display:none; white-space:nowrap;">
+                            <i class="fas fa-folder-open"></i> Browse
+                        </button>
+                    </div>
+                    <div class="form-hint" id="path-hint">Đường dẫn đến file log trên server</div>
+                    <div class="form-hint" id="pattern-hint" style="display:none; color: var(--accent);">
+                        Hỗ trợ pattern ngày: <code>{Y-m-d}</code>, <code>{dmY}</code>, <code>{Ymd}</code>... <br>
+                        VD: <code>/var/log/app-{Y-m-d}.log</code> -> <code>/var/log/app-{{ date('Y-m-d') }}.log</code>
+                    </div>
                     @error('log_path') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
+                {{-- File Browser Panel (hiện khi server là Agent) --}}
+                <div id="browser-panel" style="display:none; margin-bottom:16px;">
+                    <div style="border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--bg-primary);">
+                        {{-- Browser header --}}
+                        <div style="background:var(--bg-secondary); padding:10px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border);">
+                            <i class="fas fa-folder" style="color:var(--warning);"></i>
+                            <code id="browser-current-path" style="font-size:12px; color:var(--text-secondary); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">/var/log</code>
+                            <button type="button" onclick="browserNav('..')" class="btn btn-sm btn-secondary" style="padding:3px 8px;">
+                                <i class="fas fa-arrow-up"></i> Up
+                            </button>
+                        </div>
+                        {{-- path input trong browser --}}
+                        <div style="padding:8px 12px; border-bottom:1px solid var(--border); display:flex; gap:6px;">
+                            <input type="text" id="browser-path-input" class="form-control"
+                                   style="font-family:'JetBrains Mono',monospace; font-size:12px; padding:5px 10px;"
+                                   placeholder="/var/log"
+                                   onkeydown="if(event.key==='Enter'){event.preventDefault();browserNav(document.getElementById('browser-path-input').value);}">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="browserNav(document.getElementById('browser-path-input').value)" style="white-space:nowrap;">
+                                <i class="fas fa-chevron-right"></i> Go
+                            </button>
+                        </div>
+                        {{-- file list --}}
+                        <div id="browser-list" style="max-height:280px; overflow-y:auto; padding:6px 0;">
+                            <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">
+                                <i class="fas fa-spinner fa-spin"></i> Đang tải...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Script path --}}
+                <div class="form-group">
+                    <label class="form-label" for="script_path">Script thực thi (VD: Pull code & Restart)</label>
+                    <input type="text" id="script_path" name="script_path" class="form-control"
+                           value="{{ old('script_path', $logApp->script_path) }}" placeholder="VD: /var/www/deploy.sh"
+                           style="font-family:'JetBrains Mono',monospace; font-size:13px;">
+                    <div class="form-hint">Đường dẫn đến file .sh trên server. Để trống nếu không dùng.</div>
+                    @error('script_path') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
+                {{-- Allowed Roles --}}
+                @php $allowed = explode(',', $logApp->allowed_roles); @endphp
+                <div class="form-group">
+                    <label class="form-label">Quyền thực thi script</label>
+                    <div style="display:flex; gap:20px; margin-top:8px;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <input type="checkbox" name="roles[]" value="admin" checked disabled>
+                            <span>Admin</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <input type="checkbox" name="roles[]" value="user" {{ in_array('user', $allowed) ? 'checked' : '' }}>
+                            <span>User</span>
+                        </label>
+                    </div>
+                    <input type="hidden" name="allowed_roles" id="allowed_roles" value="{{ $logApp->allowed_roles }}">
+                    <div class="form-hint">Admin luôn có quyền. Chọn User nếu muốn cho phép người dùng thường chạy script.</div>
                 </div>
 
                 <div class="form-group">
@@ -72,3 +154,165 @@
     </form>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.browser-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: background 0.1s;
+    border-bottom: 1px solid var(--border-light);
+    text-decoration: none;
+}
+.browser-item:last-child { border-bottom: none; }
+.browser-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.browser-item.is-file:hover { background: var(--accent-dark); color: var(--accent); }
+.browser-item .item-size {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+}
+.browser-item .no-access { opacity: 0.4; cursor: not-allowed; }
+</style>
+@endpush
+
+@push('scripts')
+<script>
+let _browseUrl = '';
+let _currentPath = '/var/log';
+
+function onServerChange(sel) {
+    const opt     = sel.options[sel.selectedIndex];
+    const type    = opt.dataset.type;
+    const browseUrl = opt.dataset.browse;
+
+    const btnBrowse   = document.getElementById('btn-browse');
+    const browserPanel = document.getElementById('browser-panel');
+    const pathHint    = document.getElementById('path-hint');
+
+    if (type === 'agent' && browseUrl) {
+        _browseUrl = browseUrl;
+        btnBrowse.style.display = '';
+        pathHint.innerHTML = 'Đường dẫn trên remote server. Dùng nút <strong>Browse</strong> để duyệt.';
+    } else {
+        _browseUrl = '';
+        btnBrowse.style.display = 'none';
+        browserPanel.style.display = 'none';
+        pathHint.innerHTML = 'Đường dẫn tuyệt đối đến file log trên server';
+    }
+}
+
+function openBrowser() {
+    const panel = document.getElementById('browser-panel');
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        const cur = document.getElementById('log_path').value || '/var/log';
+        const browseTo = cur.endsWith('/') || !cur.includes('.') ? cur : cur.substring(0, cur.lastIndexOf('/')) || '/var/log';
+        browserNav(browseTo);
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+async function browserNav(path) {
+    if (!_browseUrl) return;
+    _currentPath = path.trim() || '/var/log';
+
+    document.getElementById('browser-current-path').textContent = _currentPath;
+    document.getElementById('browser-path-input').value = _currentPath;
+    document.getElementById('browser-list').innerHTML =
+        '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>';
+
+    try {
+        const resp = await fetch(_browseUrl + '?path=' + encodeURIComponent(_currentPath), {
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+        });
+        const data = await resp.json();
+
+        if (!data.success) {
+            document.getElementById('browser-list').innerHTML =
+                `<div style="padding:16px;color:var(--danger);font-size:12px;"><i class="fas fa-exclamation-circle"></i> ${data.error}</div>`;
+            return;
+        }
+
+        renderBrowserList(data.entries || [], data.path);
+    } catch(e) {
+        document.getElementById('browser-list').innerHTML =
+            `<div style="padding:16px;color:var(--danger);font-size:12px;"><i class="fas fa-exclamation-circle"></i> ${e.message}</div>`;
+    }
+}
+
+function renderBrowserList(entries, basePath) {
+    const list = document.getElementById('browser-list');
+    if (!entries.length) {
+        list.innerHTML = '<div style="padding:16px;color:var(--text-muted);text-align:center;font-size:12px;">Thư mục trống</div>';
+        return;
+    }
+
+    list.innerHTML = entries.map(e => {
+        const icon    = e.is_dir ? 'fa-folder' : 'fa-file-alt';
+        const color   = e.is_dir ? 'var(--warning)' : 'var(--text-muted)';
+        const size    = e.size_human ? `<span class="item-size">${e.size_human}</span>` : '';
+        const noAccess = !e.readable ? 'no-access' : '';
+
+        if (e.is_dir) {
+            return `<div class="browser-item ${noAccess}" onclick="${e.readable ? `browserNav('${e.path.replace(/'/g, "\\'")}')` : ''}">
+                <i class="fas ${icon}" style="color:${color}; width:16px;"></i>
+                <span>${e.name}/</span>
+                ${size}
+            </div>`;
+        } else {
+            return `<div class="browser-item is-file ${noAccess}" onclick="${e.readable ? `selectPath('${e.path.replace(/'/g, "\\'")}')` : ''}">
+                <i class="fas ${icon}" style="color:${color}; width:16px;"></i>
+                <span>${e.name}</span>
+                ${size}
+            </div>`;
+        }
+    }).join('');
+}
+
+function selectPath(path) {
+    document.getElementById('log_path').value = path;
+    document.getElementById('browser-panel').style.display = 'none';
+    const inp = document.getElementById('log_path');
+    inp.style.borderColor = 'var(--success)';
+    setTimeout(() => inp.style.borderColor = '', 1500);
+}
+
+function togglePathHint() {
+    const type = document.getElementById('log_type').value;
+    const pathHint = document.getElementById('path-hint');
+    const patternHint = document.getElementById('pattern-hint');
+
+    if (type === 'pattern') {
+        pathHint.style.display = 'none';
+        patternHint.style.display = 'block';
+    } else {
+        pathHint.style.display = 'block';
+        patternHint.style.display = 'none';
+    }
+}
+
+document.querySelectorAll('input[name="roles[]"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+        const roles = ['admin'];
+        if (document.querySelector('input[value="user"]').checked) {
+            roles.push('user');
+        }
+        document.getElementById('allowed_roles').value = roles.join(',');
+    });
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    const sel = document.getElementById('server_id');
+    if (sel.value) onServerChange(sel);
+    togglePathHint();
+});
+</script>
+@endpush

@@ -49,6 +49,16 @@
                     @error('name') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
 
+                {{-- Log Type --}}
+                <div class="form-group">
+                    <label class="form-label" for="log_type">Loại Log <span class="required">*</span></label>
+                    <select id="log_type" name="log_type" class="form-control" required onchange="togglePathHint()">
+                        <option value="file" {{ old('log_type') == 'file' ? 'selected' : '' }}>File cố định</option>
+                        <option value="pattern" {{ old('log_type') == 'pattern' ? 'selected' : '' }}>Theo ngày (Pattern)</option>
+                    </select>
+                    @error('log_type') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
                 {{-- Log path + Browse button --}}
                 <div class="form-group">
                     <label class="form-label" for="log_path">
@@ -66,7 +76,45 @@
                         </button>
                     </div>
                     <div class="form-hint" id="path-hint">Đường dẫn đến file log trên server</div>
+                    <div class="form-hint" id="pattern-hint" style="display:none; color: var(--accent);">
+                        Hỗ trợ pattern ngày: <code>{Y-m-d}</code>, <code>{dmY}</code>, <code>{Ymd}</code>... <br>
+                        VD: <code>/var/log/app-{Y-m-d}.log</code> -> <code>/var/log/app-{{ date('Y-m-d') }}.log</code>
+                    </div>
                     @error('log_path') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
+                {{-- Script path --}}
+                <div class="form-group">
+                    <label class="form-label" for="script_path">Script thực thi (VD: Pull code & Restart)</label>
+                    <input type="text" id="script_path" name="script_path" class="form-control"
+                           value="{{ old('script_path') }}" placeholder="VD: /var/www/deploy.sh"
+                           style="font-family:'JetBrains Mono',monospace; font-size:13px;">
+                    <div class="form-hint">Đường dẫn đến file .sh trên server. Để trống nếu không dùng.</div>
+                    @error('script_path') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
+                {{-- Allowed Roles --}}
+                <div class="form-group">
+                    <label class="form-label">Quyền thực thi script</label>
+                    <div style="display:flex; gap:20px; margin-top:8px;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <input type="checkbox" name="roles[]" value="admin" checked disabled>
+                            <span>Admin</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <input type="checkbox" name="roles[]" value="user" {{ is_array(old('roles')) && in_array('user', old('roles')) ? 'checked' : '' }}>
+                            <span>User</span>
+                        </label>
+                    </div>
+                    <input type="hidden" name="allowed_roles" id="allowed_roles" value="admin">
+                    <div class="form-hint">Admin luôn có quyền. Chọn User nếu muốn cho phép người dùng thường chạy script.</div>
+                </div>
+
+                {{-- Description --}}
+                <div class="form-group">
+                    <label class="form-label" for="description">Mô tả</label>
+                    <textarea id="description" name="description" class="form-control" rows="2"
+                              placeholder="Mô tả về ứng dụng hoặc file log này...">{{ old('description') }}</textarea>
                 </div>
 
                 {{-- File Browser Panel (hiện khi server là Agent) --}}
@@ -97,13 +145,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                {{-- Description --}}
-                <div class="form-group">
-                    <label class="form-label" for="description">Mô tả</label>
-                    <textarea id="description" name="description" class="form-control" rows="2"
-                              placeholder="Mô tả về ứng dụng hoặc file log này...">{{ old('description') }}</textarea>
                 </div>
 
                 <div class="toggle-wrapper">
@@ -260,10 +301,36 @@ function selectPath(path) {
     setTimeout(() => inp.style.borderColor = '', 1500);
 }
 
+function togglePathHint() {
+    const type = document.getElementById('log_type').value;
+    const pathHint = document.getElementById('path-hint');
+    const patternHint = document.getElementById('pattern-hint');
+
+    if (type === 'pattern') {
+        pathHint.style.display = 'none';
+        patternHint.style.display = 'block';
+    } else {
+        pathHint.style.display = 'block';
+        patternHint.style.display = 'none';
+    }
+}
+
+// Roles handling
+document.querySelectorAll('input[name="roles[]"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+        const roles = ['admin'];
+        if (document.querySelector('input[value="user"]').checked) {
+            roles.push('user');
+        }
+        document.getElementById('allowed_roles').value = roles.join(',');
+    });
+});
+
 // Init khi load lại trang (old values)
 window.addEventListener('DOMContentLoaded', () => {
     const sel = document.getElementById('server_id');
     if (sel.value) onServerChange(sel);
+    togglePathHint();
 });
 </script>
 @endpush

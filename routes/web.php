@@ -36,6 +36,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/logs', [LogViewController::class, 'index'])->name('logs.index');
     Route::get('/logs/{logApp}', [LogViewController::class, 'show'])->name('logs.show');
     Route::get('/logs/{logApp}/fetch', [LogViewController::class, 'fetch'])->name('logs.fetch');
+    Route::post('/logs/{logApp}/execute', [LogViewController::class, 'executeScript'])->name('logs.execute');
 
     // Admin panel
     Route::prefix('admin')->name('admin.')->middleware(['role:admin'])->group(function () {

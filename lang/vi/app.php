@@ -133,6 +133,15 @@ return [
     'no_apps_found'              => 'Chưa có ứng dụng nào.',
     'confirm_delete_app'         => 'Xóa ứng dụng này?',
     'server_offline'             => 'Server tắt',
+    'log_type'                   => 'Loại Log',
+    'log_type_file'              => 'File cố định',
+    'log_type_pattern'           => 'Theo ngày (Pattern)',
+    'log_path_pattern_hint'      => 'Hỗ trợ pattern: {Y-m-d}, {dmY}, {Ymd}...',
+    'script_path'                => 'Script thực thi (.sh)',
+    'script_path_hint'           => 'Đường dẫn đến file .sh trên server (VD: deploy.sh)',
+    'allowed_roles'              => 'Quyền thực thi script',
+    'btn_run_script'             => 'Chạy Script',
+    'confirm_run_script'         => 'Bạn có chắc muốn chạy script này?',
 
     // Users
     'users'                      => 'Người dùng',

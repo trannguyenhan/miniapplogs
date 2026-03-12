@@ -11,6 +11,9 @@ class LogApplication extends Model
         'server_id',
         'name',
         'log_path',
+        'log_type',
+        'script_path',
+        'allowed_roles',
         'description',
         'is_active',
     ];
@@ -22,5 +25,15 @@ class LogApplication extends Model
     public function server(): BelongsTo
     {
         return $this->belongsTo(Server::class);
+    }
+
+    public function canRunScript($user): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        $allowedRoles = explode(',', $this->allowed_roles);
+        return in_array($user->role, $allowedRoles);
     }
 }

@@ -167,6 +167,24 @@ handle() {
             "{\"success\":true,\"path\":\"$(json_str "$path")\",\"is_dir\":${is_dir},\"size\":${size},\"size_human\":\"${size_h}\",\"modified\":${modified},\"readable\":${readable}}"
     }
 
+    # ── Endpoint: /execute ────────────────────────────────────────────────────
+    ep_execute() {
+        local path="${QS_path:-}"
+        path="${path/#\~/$HOME}"
+        path="$(realpath -m "$path" 2>/dev/null || printf '%s' "$path")"
+
+        [[ -z "$path"    ]] && { respond "400 Bad Request" '{"error":"Missing param: path"}'; return; }
+        [[ ! -e "$path"  ]] && { respond "404 Not Found"   "{\"error\":\"Not found: $(json_str "$path")\"}"; return; }
+        [[ ! -f "$path"  ]] && { respond "400 Bad Request" "{\"error\":\"Not a script: $(json_str "$path")\"}"; return; }
+        # Cho phép chạy nếu là file thường (bash sẽ đọc), không bắt buộc +x nếu ta dùng 'bash path'
+        
+        local output
+        output=$(bash "$path" 2>&1)
+
+        respond "200 OK" \
+            "{\"success\":true,\"output\":\"$(json_str "$output")\"}"
+    }
+
     # ── Read HTTP request ─────────────────────────────────────────────────────
     local request_line method full_path auth_header=""
 
@@ -180,12 +198,28 @@ handle() {
         hdr="${hdr%$'\r'}"
         [[ -z "$hdr" ]] && break
         [[ "${hdr,,}" =~ ^authorization:\ bearer\ (.+)$ ]] && auth_header="${BASH_REMATCH[1]}"
+        if [[ "${hdr,,}" =~ ^content-length:\ ([0-9]+)$ ]]; then
+            clen="${BASH_REMATCH[1]}"
+        fi
     done
 
     # Parse path & query string
     local endpoint="${full_path%%[?]*}" qs=""
     [[ "$full_path" == *"?"* ]] && qs="${full_path#*[?]}"
     [[ -n "$qs" ]] && parse_qs "$qs"
+
+    # Xử lý body nếu là POST
+    if [[ "$method" == "POST" ]]; then
+        # Đọc body json {"path": "..."}
+        if (( clen > 0 )); then
+            local body
+            body="$(dd bs=1 count="$clen" 2>/dev/null)"
+            # Extract path value using awk/sed
+            local path_val
+            path_val=$(echo "$body" | grep -o '\"path\"[[:space:]]*:[[:space:]]*\"[^\"]*\"' | head -1 | sed 's/.*"path"[[:space:]]*:[[:space:]]*"//;s/".*//')
+            [[ -n "$path_val" ]] && QS_path="$path_val"
+        fi
+    fi
 
     # Auth (trừ /health)
     if [[ "$endpoint" != "/health" && -n "$TOKEN" && "$auth_header" != "$TOKEN" ]]; then
@@ -194,11 +228,12 @@ handle() {
     fi
 
     case "$endpoint" in
-        /health) ep_health ;;
-        /logs)   ep_logs ;;
-        /list)   ep_list ;;
-        /info)   ep_info ;;
-        *)       respond "404 Not Found" "{\"error\":\"Unknown: $endpoint\"}" ;;
+        /health)  ep_health ;;
+        /logs)    ep_logs ;;
+        /list)    ep_list ;;
+        /info)    ep_info ;;
+        /execute) ep_execute ;;
+        *)        respond "404 Not Found" "{\"error\":\"Unknown: $endpoint\"}" ;;
     esac
 
 } # end handle()

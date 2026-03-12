@@ -25,7 +25,9 @@
                     <th>#</th>
                     <th>{{ __('app.app_name') }}</th>
                     <th>{{ __('app.nav_servers') }}</th>
+                    <th>{{ __('app.log_type') }}</th>
                     <th>{{ __('app.log_path_label') }}</th>
+                    <th>Script</th>
                     <th>{{ __('app.status') }}</th>
                     <th>{{ __('app.actions') }}</th>
                 </tr>
@@ -46,9 +48,23 @@
                         </span>
                     </td>
                     <td>
+                        @if($app->log_type === 'pattern')
+                            <span class="badge badge-warning" title="Dựa theo ngày">{!! __('app.log_type_pattern') !!}</span>
+                        @else
+                            <span style="font-size:12px; color:var(--text-secondary);">{{ __('app.log_type_file') }}</span>
+                        @endif
+                    </td>
+                    <td>
                         <code style="font-family:'JetBrains Mono',monospace; font-size:11px; background: var(--bg-primary); padding:3px 7px; border-radius:4px; color: var(--text-secondary); word-break:break-all; max-width:300px; display:block;">
                             {{ $app->log_path }}
                         </code>
+                    </td>
+                    <td style="text-align:center;">
+                        @if($app->script_path)
+                            <i class="fas fa-terminal" style="color:var(--accent);" title="{{ $app->script_path }}"></i>
+                        @else
+                            <span style="color:var(--text-muted);">-</span>
+                        @endif
                     </td>
                     <td>
                         @if($app->is_active && $app->server->is_active)
@@ -81,7 +97,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" style="text-align:center; padding:40px; color: var(--text-muted);">
+                    <td colspan="8" style="text-align:center; padding:40px; color: var(--text-muted);">
                         <i class="fas fa-file-alt" style="font-size:32px; margin-bottom:10px; display:block;"></i>
                         {{ __('app.no_apps_found') }}
                         <a href="{{ route('admin.log-apps.create') }}" style="color: var(--accent);">{{ __('app.add_now') }}</a>
