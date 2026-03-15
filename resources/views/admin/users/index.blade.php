@@ -63,7 +63,7 @@
                             </a>
                             @if($user->id !== auth()->id())
                             <form method="POST" action="{{ route('admin.users.destroy', $user) }}"
-                                  onsubmit="return confirm('{{ __('app.confirm_delete_user', ['name' => $user->name]) }}')">
+                                  onsubmit="return confirmDelete(event, '{{ __('app.confirm_delete_user', ['name' => $user->name]) }}')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-danger">
                                     <i class="fas fa-trash"></i>

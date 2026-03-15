@@ -14,25 +14,33 @@ class LogReaderService
      */
     public function readLogs(Server $server, string $logPath, int $lines = 1000, string $logType = 'file'): array
     {
-        if ($logType !== 'docker') {
+        if ($logType === 'journalctl') {
+            // journalctl doesn't need path resolution
+        } elseif ($logType !== 'docker') {
             $logPath = $this->resolvePath($logPath);
         }
 
         if ($server->isLocal()) {
-            return $logType === 'docker' 
-                ? $this->readLocalDockerLogs($logPath, $lines) 
-                : $this->readLocalLogs($logPath, $lines);
+            return match($logType) {
+                'docker' => $this->readLocalDockerLogs($logPath, $lines),
+                'journalctl' => $this->readLocalJournalctl($logPath, $lines),
+                default => $this->readLocalLogs($logPath, $lines),
+            };
         }
 
         if ($server->usesSsh()) {
-            return $logType === 'docker' 
-                ? $this->readSshDockerLogs($server, $logPath, $lines) 
-                : $this->readSshLogs($server, $logPath, $lines);
+            return match($logType) {
+                'docker' => $this->readSshDockerLogs($server, $logPath, $lines),
+                'journalctl' => $this->readSshJournalctl($server, $logPath, $lines),
+                default => $this->readSshLogs($server, $logPath, $lines),
+            };
         }
 
-        return $logType === 'docker'
-            ? $this->readAgentDockerLogs($server, $logPath, $lines)
-            : $this->readAgentLogs($server, $logPath, $lines);
+        return match($logType) {
+            'docker' => $this->readAgentDockerLogs($server, $logPath, $lines),
+            'journalctl' => $this->readAgentJournalctl($server, $logPath, $lines),
+            default => $this->readAgentLogs($server, $logPath, $lines),
+        };
     }
 
     /**
@@ -291,6 +299,92 @@ class LogReaderService
             $response = $request->get(rtrim($server->agent_url, '/') . '/docker-logs', [
                 'container' => $container,
                 'lines'     => $lines,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return [
+                    'success' => true,
+                    'lines'   => $data['lines'] ?? [],
+                    'count'   => $data['count']  ?? 0,
+                ];
+            }
+
+            $error = $response->json('error') ?? $response->body();
+            return ['success' => false, 'error' => "Agent lỗi [{$response->status()}]: {$error}", 'lines' => []];
+
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Không thể kết nối tới agent: ' . $e->getMessage(), 'lines' => []];
+        }
+    }
+
+    // ── Journalctl ──────────────────────────────────────────────────────────────
+
+    protected function readLocalJournalctl(string $unit, int $lines = 1000): array
+    {
+        try {
+            $unit = escapeshellarg($unit);
+            $output = shell_exec("journalctl -u {$unit} -n " . (int)$lines . " --no-pager --no-hostname 2>&1");
+            
+            if ($output === null) {
+                return ['success' => false, 'error' => 'Chạy journalctl thất bại hoặc unit không tồn tại', 'lines' => []];
+            }
+
+            $logLines = array_filter(
+                explode("\n", rtrim($output, "\n")),
+                fn($l) => $l !== ''
+            );
+
+            return ['success' => true, 'lines' => array_values($logLines), 'count' => count($logLines)];
+
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Lỗi đọc journalctl local: ' . $e->getMessage(), 'lines' => []];
+        }
+    }
+
+    protected function readSshJournalctl(Server $server, string $unit, int $lines = 1000): array
+    {
+        try {
+            $ssh = $this->makeSshConnection($server);
+
+            if (!$ssh) {
+                return ['success' => false, 'error' => 'Không thể kết nối SSH tới server.', 'lines' => []];
+            }
+
+            $unit = escapeshellarg($unit);
+            $output = $ssh->exec("journalctl -u {$unit} -n " . (int)$lines . " --no-pager --no-hostname 2>&1");
+
+            if ($ssh->getExitStatus() !== 0) {
+                $errorMsg = trim($output);
+                if (str_contains($errorMsg, 'No journal files were found') || str_contains($errorMsg, 'No entries')) {
+                    return ['success' => false, 'error' => "Unit không tồn tại hoặc không có log: {$unit}", 'lines' => []];
+                }
+                return ['success' => false, 'error' => "journalctl lỗi: {$errorMsg}", 'lines' => []];
+            }
+
+            $logLines = array_filter(
+                explode("\n", rtrim($output, "\n")),
+                fn($l) => $l !== ''
+            );
+
+            return ['success' => true, 'lines' => array_values($logLines), 'count' => count($logLines)];
+
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Lỗi SSH journalctl: ' . $e->getMessage(), 'lines' => []];
+        }
+    }
+
+    protected function readAgentJournalctl(Server $server, string $unit, int $lines = 1000): array
+    {
+        try {
+            $request = Http::timeout(15)->withHeaders(['Accept' => 'application/json']);
+            if ($server->agent_token) {
+                $request = $request->withToken($server->agent_token);
+            }
+
+            $response = $request->get(rtrim($server->agent_url, '/') . '/journalctl', [
+                'unit'  => $unit,
+                'lines' => $lines,
             ]);
 
             if ($response->successful()) {

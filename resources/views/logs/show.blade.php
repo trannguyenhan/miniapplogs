@@ -488,7 +488,10 @@ function clearSearch() {
 }
 
 async function executeScript() {
-    if (!confirm('Bạn có chắc muốn chạy script này không? (VD: Pull code & Restart)')) return;
+    const confirmed = await confirm('Bạn có chắc muốn chạy script này không? (VD: Pull code & Restart)', {
+        title: 'Xác nhận thực thi script'
+    });
+    if (!confirmed) return;
 
     const btn = document.getElementById('btn-execute');
     const icon = document.getElementById('exec-icon');
@@ -510,15 +513,15 @@ async function executeScript() {
 
         if (data.success) {
             setStatus('success', 'Script hoàn thành');
-            alert('Thực thi thành công!\n\nOutput:\n' + (data.output || 'Không có output'));
+            showOutput('Thực thi thành công!', data.output || 'Không có output', 'success');
             loadLogs(); // Reload logs after script
         } else {
             setStatus('error', 'Script lỗi');
-            alert('Lỗi: ' + data.error);
+            showError(data.error, 'Lỗi thực thi script');
         }
     } catch (e) {
         setStatus('error', 'Lỗi kết nối');
-        alert('Lỗi kết nối: ' + e.message);
+        showError('Lỗi kết nối: ' + e.message, 'Lỗi kết nối');
     } finally {
         btn.disabled = false;
         icon.className = 'fas fa-terminal';

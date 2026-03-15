@@ -3,8 +3,8 @@
 return [
 
     // Layout / Sidebar
-    'app_name'           => 'MiniAppLogs',
-    'app_subtitle'       => 'Log Monitor',
+    'app_name'           => config('app.name', env('APP_NAME', 'MiniAppLogs')),
+    'app_subtitle'       => env('APP_SUBTITLE', 'Log Monitor'),
     'nav_log_list'       => 'Danh sách ứng dụng',
     'nav_admin'          => 'Quản trị Admin',
     'nav_servers'        => 'Quản lý Server',
@@ -120,7 +120,7 @@ return [
     'log_app_subtitle'           => 'Cấu hình tên ứng dụng và đường dẫn file log tương ứng',
     'add_log_app'                => 'Thêm ứng dụng',
     'edit_log_app'               => 'Sửa ứng dụng',
-    'app_name'                   => 'Tên ứng dụng',
+    'application_name'            => 'Tên ứng dụng',
     'app_name_placeholder'       => 'VD: Laravel App, Nginx Access...',
     'select_server'              => 'Chọn Server',
     'log_path_label'             => 'Đường dẫn file log (tuyệt đối)',

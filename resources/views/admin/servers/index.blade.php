@@ -75,7 +75,7 @@
                                 <i class="fas fa-edit"></i>
                             </a>
                             <form method="POST" action="{{ route('admin.servers.destroy', $server) }}"
-                                  onsubmit="return confirm('{{ __('app.confirm_delete_server') }}')">
+                                  onsubmit="return confirmDelete(event, '{{ __('app.confirm_delete_server') }}')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-danger">
                                     <i class="fas fa-trash"></i>

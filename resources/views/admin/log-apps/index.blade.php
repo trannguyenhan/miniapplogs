@@ -23,7 +23,7 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>{{ __('app.app_name') }}</th>
+                    <th>{{ __('app.application_name') }}</th>
                     <th>{{ __('app.nav_servers') }}</th>
                     <th>{{ __('app.log_type') }}</th>
                     <th>{{ __('app.log_path_label') }}</th>
@@ -52,6 +52,8 @@
                             <span class="badge badge-warning" title="Dựa theo ngày">{!! __('app.log_type_pattern') !!}</span>
                         @elseif($app->log_type === 'docker')
                             <span class="badge badge-secondary" title="Docker Container"><i class="fab fa-docker" style="color:#2496ed;"></i> Docker</span>
+                        @elseif($app->log_type === 'journalctl')
+                            <span class="badge badge-info" title="Systemd Journal"><i class="fas fa-book"></i> journalctl</span>
                         @else
                             <span style="font-size:12px; color:var(--text-secondary);">{{ __('app.log_type_file') }}</span>
                         @endif
@@ -88,7 +90,7 @@
                                 <i class="fas fa-edit"></i>
                             </a>
                             <form method="POST" action="{{ route('admin.log-apps.destroy', $app) }}"
-                                  onsubmit="return confirm('{{ __('app.confirm_delete_app') }}')">
+                                  onsubmit="return confirmDelete(event, '{{ __('app.confirm_delete_app') }}')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-danger" title="{{ __('app.btn_delete') }}">
                                     <i class="fas fa-trash"></i>

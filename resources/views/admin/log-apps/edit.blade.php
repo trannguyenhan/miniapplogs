@@ -43,10 +43,11 @@
                 {{-- Log Type --}}
                 <div class="form-group">
                     <label class="form-label" for="log_type">Loại Log <span class="required">*</span></label>
-                    <select id="log_type" name="log_type" class="form-control" required onchange="togglePathHint()">
+                    <select id="log_type" name="log_type" class="form-control" required onchange="togglePathHint(); suggestAppName();">
                         <option value="file" {{ old('log_type', $logApp->log_type) == 'file' ? 'selected' : '' }}>File cố định</option>
                         <option value="pattern" {{ old('log_type', $logApp->log_type) == 'pattern' ? 'selected' : '' }}>Theo ngày (Pattern)</option>
                         <option value="docker" {{ old('log_type', $logApp->log_type) == 'docker' ? 'selected' : '' }}>Docker Container</option>
+                        <option value="journalctl" {{ old('log_type', $logApp->log_type) == 'journalctl' ? 'selected' : '' }}>Systemd Journal (journalctl)</option>
                     </select>
                     @error('log_type') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
@@ -57,6 +58,7 @@
                         <input type="text" id="log_path" name="log_path" class="form-control"
                                value="{{ old('log_path', $logApp->log_path) }}"
                                style="font-family:'JetBrains Mono',monospace; font-size:13px;"
+                               oninput="suggestAppName()"
                                required>
                         <button type="button" id="btn-browse" class="btn btn-secondary"
                                 onclick="openBrowser()" style="display:none; white-space:nowrap;">
@@ -70,6 +72,10 @@
                     </div>
                     <div class="form-hint" id="docker-hint" style="display:none; color: var(--warning);">
                         Nhập tên hoặc ID của Docker container. VD: <code>nginx-proxy</code>, <code>mysql-db</code>
+                    </div>
+                    <div class="form-hint" id="journalctl-hint" style="display:none; color: var(--info);">
+                        Nhập tên systemd unit (service). VD: <code>cms.ggcamp.org.service</code>, <code>nginx.service</code>, <code>mysql.service</code><br>
+                        Hệ thống sẽ chạy: <code>journalctl -u {unit} -n {lines}</code>
                     </div>
                     @error('log_path') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
@@ -294,17 +300,81 @@ function togglePathHint() {
     const pathHint = document.getElementById('path-hint');
     const patternHint = document.getElementById('pattern-hint');
     const dockerHint = document.getElementById('docker-hint');
+    const journalctlHint = document.getElementById('journalctl-hint');
 
     pathHint.style.display = 'none';
     patternHint.style.display = 'none';
     if (dockerHint) dockerHint.style.display = 'none';
+    if (journalctlHint) journalctlHint.style.display = 'none';
 
     if (type === 'pattern') {
         patternHint.style.display = 'block';
     } else if (type === 'docker') {
         if (dockerHint) dockerHint.style.display = 'block';
+    } else if (type === 'journalctl') {
+        if (journalctlHint) journalctlHint.style.display = 'block';
     } else {
         pathHint.style.display = 'block';
+    }
+}
+
+// Auto-suggest app name from log path
+function suggestAppName() {
+    const logPath = document.getElementById('log_path').value.trim();
+    const nameInput = document.getElementById('name');
+    const logType = document.getElementById('log_type').value;
+    
+    // Chỉ suggest nếu name đang trống hoặc chưa được chỉnh sửa thủ công
+    if (!logPath || nameInput.value.trim() !== '') {
+        return;
+    }
+    
+    let suggestedName = '';
+    
+    if (logType === 'journalctl') {
+        // journalctl: cms.ggcamp.org.service -> cms.ggcamp.org
+        // hoặc nginx.service -> nginx
+        const unit = logPath.replace(/\.service$/, '');
+        const parts = unit.split('.');
+        if (parts.length > 1) {
+            // Nếu có nhiều phần, lấy phần đầu tiên (domain name)
+            suggestedName = parts[0];
+        } else {
+            suggestedName = unit;
+        }
+    } else if (logType === 'docker') {
+        // docker: nginx-proxy -> nginx-proxy
+        suggestedName = logPath;
+    } else {
+        // file/pattern: /var/log/nginx/access.log -> nginx
+        // hoặc /var/log/app/app.log -> app
+        const parts = logPath.split('/').filter(p => p);
+        const filename = parts[parts.length - 1] || '';
+        
+        // Lấy tên từ filename (bỏ extension và pattern)
+        if (filename) {
+            suggestedName = filename.replace(/\.[^.]+$/, '').replace(/\{[^}]+\}/g, '');
+        }
+        
+        // Nếu không có filename hợp lệ, lấy từ thư mục
+        if (!suggestedName && parts.length > 1) {
+            suggestedName = parts[parts.length - 2];
+        }
+    }
+    
+    // Capitalize first letter và format
+    if (suggestedName) {
+        suggestedName = suggestedName
+            .split(/[-_]/)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+    
+    // Chỉ điền nếu có suggested name và name input đang trống
+    if (suggestedName && !nameInput.value.trim()) {
+        nameInput.value = suggestedName;
+        nameInput.style.borderColor = 'var(--accent)';
+        setTimeout(() => nameInput.style.borderColor = '', 1500);
     }
 }
 

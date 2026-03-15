@@ -250,7 +250,10 @@ async function testSsh() {
     const btn     = document.getElementById('btn-test-ssh');
     const res     = document.getElementById('ssh-test-result');
 
-    if (!ip || !user) { alert('Nhập IP/hostname và SSH user trước.'); return; }
+    if (!ip || !user) { 
+        showError('Nhập IP/hostname và SSH user trước.', 'Thiếu thông tin'); 
+        return; 
+    }
 
     btn.disabled  = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang kết nối...';
@@ -291,7 +294,10 @@ async function testAgent() {
     const btn   = document.getElementById('btn-test-agent');
     const res   = document.getElementById('agent-test-result');
 
-    if (!url) { alert('Nhập Agent URL trước.'); return; }
+    if (!url) { 
+        showError('Nhập Agent URL trước.', 'Thiếu thông tin'); 
+        return; 
+    }
     btn.disabled  = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang test...';
     res.style.display = 'none';

@@ -3,8 +3,8 @@
 return [
 
     // Layout / Sidebar
-    'app_name'           => 'MiniAppLogs',
-    'app_subtitle'       => 'Log Monitor',
+    'app_name'           => config('app.name', env('APP_NAME', 'MiniAppLogs')),
+    'app_subtitle'       => env('APP_SUBTITLE', 'Log Monitor'),
     'nav_log_list'       => 'Application List',
     'nav_admin'          => 'Administration',
     'nav_servers'        => 'Manage Servers',
@@ -120,7 +120,7 @@ return [
     'log_app_subtitle'           => 'Configure application names and their log file paths',
     'add_log_app'                => 'Add Application',
     'edit_log_app'               => 'Edit Application',
-    'app_name'                   => 'Application Name',
+    'application_name'            => 'Application Name',
     'app_name_placeholder'       => 'e.g. Laravel App, Nginx Access...',
     'select_server'              => 'Select Server',
     'log_path_label'             => 'Log File Path (absolute)',

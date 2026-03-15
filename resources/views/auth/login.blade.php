@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ __('app.login_title') }} | MiniAppLogs</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', sans-serif;
-            background: #0d1117;
-            color: #e6edf3;
+            font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+            background: #0F172A;
+            color: #F8FAFC;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -32,15 +32,15 @@
 
         .logo-icon {
             width: 60px; height: 60px;
-            background: #7c3aed;
+            background: #22C55E;
             border-radius: 12px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 26px;
-            color: white;
+            color: #0F172A;
             margin-bottom: 14px;
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
         }
 
         .login-logo h1 {
@@ -51,13 +51,13 @@
 
         .login-logo p {
             font-size: 13px;
-            color: #8b949e;
+            color: #CBD5E1;
             margin-top: 4px;
         }
 
         .login-card {
-            background: #161b22;
-            border: 1px solid #30363d;
+            background: #1E293B;
+            border: 1px solid #334155;
             border-radius: 14px;
             padding: 32px;
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
@@ -69,7 +69,7 @@
             display: block;
             font-size: 13px;
             font-weight: 500;
-            color: #8b949e;
+            color: #CBD5E1;
             margin-bottom: 6px;
         }
 
@@ -81,55 +81,55 @@
             position: absolute;
             left: 12px; top: 50%;
             transform: translateY(-50%);
-            color: #6e7681;
+            color: #94A3B8;
             font-size: 13px;
         }
 
         .form-control {
             width: 100%;
-            background: #0d1117;
-            border: 1px solid #30363d;
+            background: #0F172A;
+            border: 1px solid #334155;
             border-radius: 8px;
             padding: 10px 12px 10px 36px;
-            color: #e6edf3;
+            color: #F8FAFC;
             font-size: 14px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Space Grotesk', 'DM Sans', sans-serif;
             transition: border-color 0.15s, box-shadow 0.15s;
             outline: none;
         }
 
         .form-control:focus {
-            border-color: #7c3aed;
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+            border-color: #22C55E;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
         }
 
-        .form-control::placeholder { color: #6e7681; }
+        .form-control::placeholder { color: #94A3B8; }
 
         .btn-login {
             width: 100%;
-            background: #7c3aed;
-            border: 1px solid #6d28d9;
+            background: #22C55E;
+            border: 1px solid #16A34A;
             border-radius: 6px;
             padding: 11px;
-            color: white;
+            color: #0F172A;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Space Grotesk', 'DM Sans', sans-serif;
             transition: background 0.15s ease;
             margin-top: 8px;
             letter-spacing: 0.3px;
         }
 
-        .btn-login:hover { background: #6d28d9; }
+        .btn-login:hover { background: #16A34A; }
         .btn-login:active { opacity: 0.9; }
 
         .alert-danger {
-            background: rgba(248, 81, 73, 0.1);
-            border: 1px solid #f85149;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #EF4444;
             border-radius: 8px;
             padding: 10px 14px;
-            color: #f85149;
+            color: #EF4444;
             font-size: 13px;
             margin-bottom: 18px;
             display: flex;
@@ -141,7 +141,7 @@
             text-align: center;
             margin-top: 20px;
             font-size: 12px;
-            color: #6e7681;
+            color: #94A3B8;
         }
 
         /* Lang switcher on login */
@@ -154,15 +154,15 @@
         .lang-switch a {
             padding: 3px 10px;
             border-radius: 4px;
-            border: 1px solid #30363d;
-            color: #6e7681;
+            border: 1px solid #334155;
+            color: #94A3B8;
             font-size: 11px;
             font-weight: 600;
             text-decoration: none;
             transition: all 0.15s;
         }
-        .lang-switch a:hover { background: #21262d; color: #e6edf3; }
-        .lang-switch a.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+        .lang-switch a:hover { background: #334155; color: #F8FAFC; }
+        .lang-switch a.active { background: #22C55E; color: #0F172A; border-color: #22C55E; }
     </style>
 </head>
 <body>

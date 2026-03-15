@@ -27,3 +27,4 @@ DOCKER_HUB.md
 .env.bk
 build.sh
 composer.lock
+.cursor/
