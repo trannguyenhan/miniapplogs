@@ -262,6 +262,12 @@
             <i class="fas fa-terminal" id="exec-icon"></i> Run Script
         </button>
         @endif
+        
+        @if($logApp->git_branch && $logApp->canGitPull(auth()->user()))
+        <button class="btn btn-info" id="btn-git-pull" onclick="showGitPullModal()">
+            <i class="fab fa-git-alt" id="git-pull-icon"></i> Git Pull
+        </button>
+        @endif
     </div>
     <div class="log-controls-right">
         <div class="status-indicator">
@@ -301,12 +307,50 @@
         <div id="log-content"></div>
     </div>
 </div>
+
+<!-- Git Pull Modal -->
+<div id="git-pull-modal" class="custom-modal" style="display:none;">
+    <div class="custom-modal-overlay" onclick="closeGitPullModal()"></div>
+    <div class="custom-modal-content" style="max-width:450px;">
+        <div class="custom-modal-header">
+            <div class="custom-modal-icon" style="color:var(--info);">
+                <i class="fab fa-git-alt"></i>
+            </div>
+            <h3 class="custom-modal-title">Git Pull</h3>
+            <button type="button" class="custom-modal-close" onclick="closeGitPullModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="custom-modal-body">
+            <p style="margin-bottom:16px;">
+                Pull code từ branch <strong>{{ $logApp->git_branch }}</strong>
+            </p>
+            <div style="padding:12px; background:var(--bg-secondary); border-radius:6px; margin-bottom:16px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="git-no-rebase" style="cursor:pointer;">
+                    <span>Không rebase (--no-rebase)</span>
+                </label>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:6px; margin-left:24px;">
+                    Nếu check, sẽ chạy <code>git pull --no-rebase</code> thay vì <code>git pull</code>
+                </div>
+            </div>
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeGitPullModal()">Hủy</button>
+            <button type="button" class="btn btn-primary" id="btn-confirm-git-pull" onclick="executeGitPull()">
+                <i class="fab fa-git-alt"></i> Pull Code
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
 const FETCH_URL = "{{ route('logs.fetch', $logApp) }}";
 const EXECUTE_URL = "{{ route('logs.execute', $logApp) }}";
+const GIT_PULL_URL = "{{ route('logs.git-pull', $logApp) }}";
 let autoRefreshInterval = null;
 let isLoading = false;
 let rawLines = [];
@@ -527,6 +571,75 @@ async function executeScript() {
         icon.className = 'fas fa-terminal';
     }
 }
+
+// Git Pull functions
+function showGitPullModal() {
+    const modal = document.getElementById('git-pull-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('show'), 10);
+}
+
+function closeGitPullModal() {
+    const modal = document.getElementById('git-pull-modal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    setTimeout(() => modal.style.display = 'none', 300);
+}
+
+async function executeGitPull() {
+    const noRebase = document.getElementById('git-no-rebase')?.checked || false;
+    const btn = document.getElementById('btn-confirm-git-pull');
+    const gitPullBtn = document.getElementById('btn-git-pull');
+    const gitPullIcon = document.getElementById('git-pull-icon');
+    
+    if (!btn || !gitPullBtn) return;
+    
+    btn.disabled = true;
+    gitPullBtn.disabled = true;
+    if (gitPullIcon) gitPullIcon.className = 'fab fa-git-alt fa-spin';
+    setStatus('loading', 'Đang pull code...');
+    closeGitPullModal();
+    
+    try {
+        const res = await fetch(GIT_PULL_URL, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ no_rebase: noRebase })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            setStatus('success', 'Pull code thành công');
+            showOutput('Git Pull thành công!', data.output || 'Không có output', 'success');
+            loadLogs(); // Reload logs after git pull
+        } else {
+            setStatus('error', 'Pull code lỗi');
+            showError(data.error, 'Lỗi Git Pull');
+        }
+    } catch (e) {
+        setStatus('error', 'Lỗi kết nối');
+        showError('Lỗi kết nối: ' + e.message, 'Lỗi kết nối');
+    } finally {
+        btn.disabled = false;
+        gitPullBtn.disabled = false;
+        if (gitPullIcon) gitPullIcon.className = 'fab fa-git-alt';
+    }
+}
+
+// Close git pull modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('git-pull-modal');
+        if (modal && modal.style.display !== 'none') {
+            closeGitPullModal();
+        }
+    }
+});
 
 // Init
 loadLogs();

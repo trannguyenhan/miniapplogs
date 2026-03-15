@@ -29,13 +29,15 @@ class LogApplicationController extends Controller
             'log_path'      => 'required|string|max:1000',
             'log_type'      => 'required|in:file,pattern,docker,journalctl',
             'script_path'   => 'nullable|string|max:1000',
+            'git_branch'    => 'nullable|string|max:255',
+            'git_path'      => 'nullable|string|max:1000',
             'allowed_roles' => 'nullable|string',
             'description'   => 'nullable|string',
             'is_active'     => 'boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
-        $validated['allowed_roles'] = $request->input('allowed_roles', 'admin,user');
+        $validated['allowed_roles'] = $request->input('allowed_roles', 'admin');
 
         $app = LogApplication::create($validated);
 
@@ -63,13 +65,15 @@ class LogApplicationController extends Controller
             'log_path'      => 'required|string|max:1000',
             'log_type'      => 'required|in:file,pattern,docker,journalctl',
             'script_path'   => 'nullable|string|max:1000',
+            'git_branch'    => 'nullable|string|max:255',
+            'git_path'      => 'nullable|string|max:1000',
             'allowed_roles' => 'nullable|string',
             'description'   => 'nullable|string',
             'is_active'     => 'boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
-        $validated['allowed_roles'] = $request->input('allowed_roles', 'admin,user');
+        $validated['allowed_roles'] = $request->input('allowed_roles', 'admin');
 
         $logApp->update($validated);
 

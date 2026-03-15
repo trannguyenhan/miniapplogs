@@ -64,7 +64,7 @@ class LogViewController extends Controller
      */
     public function executeScript(LogApplication $logApp)
     {
-        if (!$logApp->script_path) {
+        if (empty($logApp->script_path) || trim($logApp->script_path) === '') {
             return response()->json(['success' => false, 'error' => 'Ứng dụng này không có script được cấu hình.']);
         }
 
@@ -73,6 +73,32 @@ class LogViewController extends Controller
         }
 
         $result = $this->logReader->runScript($logApp->server, $logApp->script_path);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Thực thi Git Pull
+     */
+    public function gitPull(LogApplication $logApp, Request $request)
+    {
+        if (empty($logApp->git_branch) || trim($logApp->git_branch) === '') {
+            return response()->json(['success' => false, 'error' => 'Ứng dụng này chưa được cấu hình Git branch.']);
+        }
+
+        if (empty($logApp->git_branch) || trim($logApp->git_branch) === '') {
+            return response()->json(['success' => false, 'error' => 'Ứng dụng này chưa được cấu hình Git branch.']);
+        }
+
+        if (!$logApp->canGitPull(auth()->user())) {
+            return response()->json(['success' => false, 'error' => 'Bạn không có quyền thực thi Git Pull.'], 403);
+        }
+
+        $noRebase = $request->boolean('no_rebase', false);
+        $gitPath = $logApp->git_path;
+
+        // Nếu không có git_path, để LogReaderService tự động detect trên server
+        $result = $this->logReader->gitPull($logApp->server, $logApp->git_branch, $noRebase, $gitPath, $logApp->log_path);
 
         return response()->json($result);
     }

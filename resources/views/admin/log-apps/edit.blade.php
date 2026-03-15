@@ -120,6 +120,26 @@
                     @error('script_path') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
 
+                {{-- Git Branch --}}
+                <div class="form-group">
+                    <label class="form-label" for="git_branch">Git Branch (cho Git Pull)</label>
+                    <input type="text" id="git_branch" name="git_branch" class="form-control"
+                           value="{{ old('git_branch', $logApp->git_branch) }}" placeholder="VD: main, master, develop"
+                           style="font-family:'JetBrains Mono',monospace; font-size:13px;">
+                    <div class="form-hint">Nhánh Git để pull code. Để trống nếu không dùng Git Pull. VD: <code>main</code>, <code>master</code>, <code>develop</code></div>
+                    @error('git_branch') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
+                {{-- Git Path --}}
+                <div class="form-group">
+                    <label class="form-label" for="git_path">Git Repository Path</label>
+                    <input type="text" id="git_path" name="git_path" class="form-control"
+                           value="{{ old('git_path', $logApp->git_path) }}" placeholder="VD: /var/www/app hoặc để trống để tự động detect"
+                           style="font-family:'JetBrains Mono',monospace; font-size:13px;">
+                    <div class="form-hint">Đường dẫn đến thư mục Git repository. Để trống sẽ tự động detect từ log_path hoặc dùng thư mục hiện tại.</div>
+                    @error('git_path') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
                 {{-- Allowed Roles --}}
                 @php $allowed = explode(',', $logApp->allowed_roles); @endphp
                 <div class="form-group">
@@ -378,15 +398,22 @@ function suggestAppName() {
     }
 }
 
+// Roles handling
+function updateAllowedRoles() {
+    const roles = ['admin'];
+    const userCheckbox = document.querySelector('input[name="roles[]"][value="user"]');
+    if (userCheckbox && userCheckbox.checked) {
+        roles.push('user');
+    }
+    document.getElementById('allowed_roles').value = roles.join(',');
+}
+
 document.querySelectorAll('input[name="roles[]"]').forEach(cb => {
-    cb.addEventListener('change', () => {
-        const roles = ['admin'];
-        if (document.querySelector('input[value="user"]').checked) {
-            roles.push('user');
-        }
-        document.getElementById('allowed_roles').value = roles.join(',');
-    });
+    cb.addEventListener('change', updateAllowedRoles);
 });
+
+// Init allowed_roles on page load
+updateAllowedRoles();
 
 window.addEventListener('DOMContentLoaded', () => {
     const sel = document.getElementById('server_id');

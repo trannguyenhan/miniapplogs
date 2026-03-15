@@ -13,6 +13,8 @@ class LogApplication extends Model
         'log_path',
         'log_type',
         'script_path',
+        'git_branch',
+        'git_path',
         'allowed_roles',
         'description',
         'is_active',
@@ -29,11 +31,39 @@ class LogApplication extends Model
 
     public function canRunScript($user): bool
     {
+        if (empty($this->script_path) || trim($this->script_path) === '') {
+            return false;
+        }
+
         if ($user->isAdmin()) {
             return true;
         }
 
-        $allowedRoles = explode(',', $this->allowed_roles);
-        return in_array($user->role, $allowedRoles);
+        if (empty($this->allowed_roles)) {
+            return false;
+        }
+
+        // Split và trim để xử lý khoảng trắng: "admin, user" -> ["admin", "user"]
+        $allowedRoles = array_map('trim', explode(',', $this->allowed_roles));
+        return in_array($user->role, $allowedRoles, true);
+    }
+
+    public function canGitPull($user): bool
+    {
+        if (empty($this->git_branch) || trim($this->git_branch) === '') {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if (empty($this->allowed_roles)) {
+            return false;
+        }
+
+        // Split và trim để xử lý khoảng trắng: "admin, user" -> ["admin", "user"]
+        $allowedRoles = array_map('trim', explode(',', $this->allowed_roles));
+        return in_array($user->role, $allowedRoles, true);
     }
 }

@@ -103,6 +103,26 @@
                     @error('script_path') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
 
+                {{-- Git Branch --}}
+                <div class="form-group">
+                    <label class="form-label" for="git_branch">Git Branch (cho Git Pull)</label>
+                    <input type="text" id="git_branch" name="git_branch" class="form-control"
+                           value="{{ old('git_branch') }}" placeholder="VD: main, master, develop"
+                           style="font-family:'JetBrains Mono',monospace; font-size:13px;">
+                    <div class="form-hint">Nhánh Git để pull code. Để trống nếu không dùng Git Pull. VD: <code>main</code>, <code>master</code>, <code>develop</code></div>
+                    @error('git_branch') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
+                {{-- Git Path --}}
+                <div class="form-group">
+                    <label class="form-label" for="git_path">Git Repository Path</label>
+                    <input type="text" id="git_path" name="git_path" class="form-control"
+                           value="{{ old('git_path') }}" placeholder="VD: /var/www/app hoặc để trống để tự động detect"
+                           style="font-family:'JetBrains Mono',monospace; font-size:13px;">
+                    <div class="form-hint">Đường dẫn đến thư mục Git repository. Để trống sẽ tự động detect từ log_path hoặc dùng thư mục hiện tại.</div>
+                    @error('git_path') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
                 {{-- Allowed Roles --}}
                 <div class="form-group">
                     <label class="form-label">Quyền thực thi script</label>
@@ -112,11 +132,11 @@
                             <span>Admin</span>
                         </label>
                         <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <input type="checkbox" name="roles[]" value="user" {{ is_array(old('roles')) && in_array('user', old('roles')) ? 'checked' : (old('roles') === null ? 'checked' : '') }}>
+                            <input type="checkbox" name="roles[]" value="user" {{ is_array(old('roles')) && in_array('user', old('roles')) ? 'checked' : '' }}>
                             <span>User</span>
                         </label>
                     </div>
-                    <input type="hidden" name="allowed_roles" id="allowed_roles" value="admin,user">
+                    <input type="hidden" name="allowed_roles" id="allowed_roles" value="admin">
                     <div class="form-hint">Admin luôn có quyền. Chọn User nếu muốn cho phép người dùng thường chạy script.</div>
                 </div>
 
