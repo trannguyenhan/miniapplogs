@@ -209,6 +209,19 @@ handle() {
             "{\"success\":true,\"output\":\"$(json_str "$output")\"}"
     }
 
+    # ── Endpoint: /run-command ────────────────────────────────────────────────
+    ep_run_command() {
+        local cmd="${QS_command:-}"
+
+        [[ -z "$cmd" ]] && { respond "400 Bad Request" '{"error":"Missing param: command"}'; return; }
+
+        local output
+        output=$(bash -c "$cmd" 2>&1)
+
+        respond "200 OK" \
+            "{\"success\":true,\"output\":\"$(json_str "$output")\"}"
+    }
+
     # ── Read HTTP request ─────────────────────────────────────────────────────
     local request_line method full_path auth_header=""
 
@@ -241,8 +254,10 @@ handle() {
             # Extract path value using awk/sed
             local path_val
             path_val=$(echo "$body" | grep -o '\"path\"[[:space:]]*:[[:space:]]*\"[^\"]*\"' | head -1 | sed 's/.*"path"[[:space:]]*:[[:space:]]*"//;s/".*//')
-            [[ -n "$path_val" ]] && QS_path="$path_val"
-        fi
+            [[ -n "$path_val" ]] && QS_path="$path_val"            # Extract command value
+            local cmd_val
+            cmd_val=$(echo "$body" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//;s/".*//')
+            [[ -n "$cmd_val" ]] && QS_command="$cmd_val"        fi
     fi
 
     # Auth (trừ /health)
@@ -258,6 +273,7 @@ handle() {
         /list)        ep_list ;;
         /info)        ep_info ;;
         /execute)     ep_execute ;;
+        /run-command) ep_run_command ;;
         *)            respond "404 Not Found" "{\"error\":\"Unknown: $endpoint\"}" ;;
     esac
 

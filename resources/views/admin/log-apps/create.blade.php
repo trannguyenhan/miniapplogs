@@ -93,51 +93,86 @@
                     @error('log_path') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
 
-                {{-- Script path --}}
+                {{-- Project Path (git_path) --}}
                 <div class="form-group">
-                    <label class="form-label" for="script_path">Script thực thi (VD: Pull code & Restart)</label>
-                    <input type="text" id="script_path" name="script_path" class="form-control"
-                           value="{{ old('script_path') }}" placeholder="VD: /var/www/deploy.sh"
+                    <label class="form-label" for="git_path">Project Path</label>
+                    <input type="text" id="git_path" name="git_path" class="form-control"
+                           value="{{ old('git_path') }}" placeholder="VD: /var/www/app"
                            style="font-family:'JetBrains Mono',monospace; font-size:13px;">
-                    <div class="form-hint">Đường dẫn đến file .sh trên server. Để trống nếu không dùng.</div>
-                    @error('script_path') <div class="form-error">{{ $message }}</div> @enderror
+                    <div class="form-hint">Đường dẫn thư mục gốc của project trên server. Dùng cho Git Pull và các action khác. Để trống sẽ tự detect từ log_path.</div>
+                    @error('git_path') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
 
                 {{-- Git Branch --}}
                 <div class="form-group">
                     <label class="form-label" for="git_branch">Git Branch (cho Git Pull)</label>
-                    <input type="text" id="git_branch" name="git_branch" class="form-control"
-                           value="{{ old('git_branch') }}" placeholder="VD: main, master, develop"
-                           style="font-family:'JetBrains Mono',monospace; font-size:13px;">
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="git_branch" name="git_branch" class="form-control"
+                               value="{{ old('git_branch') }}" placeholder="VD: main, master, develop"
+                               style="font-family:'JetBrains Mono',monospace; font-size:13px; flex:1;">
+                        <select name="git_pull_role" class="form-control" style="flex:0 0 120px;">
+                            <option value="admin" {{ old('git_pull_role', 'admin') === 'admin' ? 'selected' : '' }}>Admin</option>
+                            <option value="user"  {{ old('git_pull_role') === 'user'  ? 'selected' : '' }}>User</option>
+                        </select>
+                    </div>
                     <div class="form-hint">Nhánh Git để pull code. Để trống nếu không dùng Git Pull. VD: <code>main</code>, <code>master</code>, <code>develop</code></div>
                     @error('git_branch') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
 
-                {{-- Git Path --}}
+                {{-- Script path --}}
                 <div class="form-group">
-                    <label class="form-label" for="git_path">Git Repository Path</label>
-                    <input type="text" id="git_path" name="git_path" class="form-control"
-                           value="{{ old('git_path') }}" placeholder="VD: /var/www/app hoặc để trống để tự động detect"
-                           style="font-family:'JetBrains Mono',monospace; font-size:13px;">
-                    <div class="form-hint">Đường dẫn đến thư mục Git repository. Để trống sẽ tự động detect từ log_path hoặc dùng thư mục hiện tại.</div>
-                    @error('git_path') <div class="form-error">{{ $message }}</div> @enderror
+                    <label class="form-label" for="script_path">Script thực thi (VD: Pull code & Restart)</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="script_path" name="script_path" class="form-control"
+                               value="{{ old('script_path') }}" placeholder="VD: /var/www/deploy.sh"
+                               style="font-family:'JetBrains Mono',monospace; font-size:13px; flex:1;">
+                        <select name="script_role" class="form-control" style="flex:0 0 120px;">
+                            <option value="admin" {{ old('script_role', 'admin') === 'admin' ? 'selected' : '' }}>Admin</option>
+                            <option value="user"  {{ old('script_role') === 'user'  ? 'selected' : '' }}>User</option>
+                        </select>
+                    </div>
+                    <div class="form-hint">Đường dẫn đến file .sh trên server. Để trống nếu không dùng.</div>
+                    @error('script_path') <div class="form-error">{{ $message }}</div> @enderror
                 </div>
 
-                {{-- Allowed Roles --}}
+                {{-- Restart Command --}}
                 <div class="form-group">
-                    <label class="form-label">Quyền thực thi script</label>
-                    <div style="display:flex; gap:20px; margin-top:8px;">
-                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <input type="checkbox" name="roles[]" value="admin" checked disabled>
-                            <span>Admin</span>
-                        </label>
-                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <input type="checkbox" name="roles[]" value="user" {{ is_array(old('roles')) && in_array('user', old('roles')) ? 'checked' : '' }}>
-                            <span>User</span>
-                        </label>
+                    <label class="form-label" for="restart_command">Lệnh Restart</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="restart_command" name="restart_command" class="form-control"
+                               value="{{ old('restart_command') }}" placeholder="VD: systemctl restart lams.ac.service"
+                               style="font-family:'JetBrains Mono',monospace; font-size:13px; flex:1;">
+                        <select name="restart_role" class="form-control" style="flex:0 0 120px;">
+                            <option value="admin" {{ old('restart_role', 'admin') === 'admin' ? 'selected' : '' }}>Admin</option>
+                            <option value="user"  {{ old('restart_role') === 'user'  ? 'selected' : '' }}>User</option>
+                        </select>
                     </div>
-                    <input type="hidden" name="allowed_roles" id="allowed_roles" value="admin">
-                    <div class="form-hint">Admin luôn có quyền. Chọn User nếu muốn cho phép người dùng thường chạy script.</div>
+                    <div class="form-hint">Lệnh shell sẽ chạy khi nhấn nút Restart. Để trống nếu không dùng.</div>
+                    @error('restart_command') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
+                {{-- Custom Buttons --}}
+                <div class="form-group">
+                    <label class="form-label">Nút tùy chỉnh (chỉ Admin)</label>
+                    <div class="form-hint" style="margin-bottom:10px;">Thêm các nút thực thi lệnh bất kỳ. Mỗi nút có nhãn hiển thị, lệnh shell và quyền thực thi riêng.</div>
+                    <div id="custom-buttons-list">
+                        @if(old('btn_labels'))
+                            @foreach(old('btn_labels') as $i => $lbl)
+                            <div class="custom-btn-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+                                <input type="text" name="btn_labels[]" class="form-control" value="{{ $lbl }}" placeholder="Nhãn nút (VD: Restart Nginx)" style="flex:1;">
+                                <input type="text" name="btn_commands[]" class="form-control" value="{{ old('btn_commands.'.$i) }}" placeholder="Lệnh (VD: systemctl restart nginx)" style="flex:2;font-family:'JetBrains Mono',monospace;font-size:13px;">
+                                <select name="btn_roles[]" class="form-control" style="flex:0 0 120px;">
+                                    <option value="admin" {{ old('btn_roles.'.$i, 'admin') === 'admin' ? 'selected' : '' }}>Admin</option>
+                                    <option value="user" {{ old('btn_roles.'.$i, 'admin') === 'user' ? 'selected' : '' }}>User</option>
+                                </select>
+                                <button type="button" class="btn btn-secondary" onclick="this.closest('.custom-btn-row').remove()" style="padding:6px 12px;"><i class="fas fa-times"></i></button>
+                            </div>
+                            @endforeach
+                        @endif
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addCustomButtonRow()" style="margin-top:4px;">
+                        <i class="fas fa-plus"></i> Thêm nút
+                    </button>
                 </div>
 
                 {{-- Description --}}
@@ -228,6 +263,23 @@
 
 @push('scripts')
 <script>
+function addCustomButtonRow() {
+    const list = document.getElementById('custom-buttons-list');
+    const row = document.createElement('div');
+    row.className = 'custom-btn-row';
+    row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center;';
+    row.innerHTML = `
+        <input type="text" name="btn_labels[]" class="form-control" placeholder="Nh\u00e3n n\u00fat (VD: Restart Nginx)" style="flex:1;">
+        <input type="text" name="btn_commands[]" class="form-control" placeholder="L\u1ec7nh (VD: systemctl restart nginx)" style="flex:2;font-family:'JetBrains Mono',monospace;font-size:13px;">
+        <select name="btn_roles[]" class="form-control" style="flex:0 0 120px;">
+            <option value="admin" selected>Admin</option>
+            <option value="user">User</option>
+        </select>
+        <button type="button" class="btn btn-secondary" onclick="this.closest('.custom-btn-row').remove()" style="padding:6px 12px;"><i class="fas fa-times"></i></button>
+    `;
+    list.appendChild(row);
+}
+
 let _browseUrl = '';
 let _currentPath = '/var/log';
 
@@ -414,25 +466,11 @@ function suggestAppName() {
     }
 }
 
-// Roles handling
-function updateAllowedRoles() {
-    const roles = ['admin'];
-    if (document.querySelector('input[value="user"]').checked) {
-        roles.push('user');
-    }
-    document.getElementById('allowed_roles').value = roles.join(',');
-}
-
-document.querySelectorAll('input[name="roles[]"]').forEach(cb => {
-    cb.addEventListener('change', updateAllowedRoles);
-});
-
 // Init khi load lại trang (old values)
 window.addEventListener('DOMContentLoaded', () => {
     const sel = document.getElementById('server_id');
     if (sel.value) onServerChange(sel);
     togglePathHint();
-    updateAllowedRoles(); // Init allowed_roles
 });
 </script>
 @endpush

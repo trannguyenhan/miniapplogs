@@ -257,16 +257,32 @@
             <option value="5000">5000 dòng</option>
         </select>
 
+        @if($logApp->git_branch && $logApp->canGitPull(auth()->user()))
+        <button class="btn btn-info" id="btn-git-pull" onclick="showGitPullModal()">
+            <i class="fab fa-git-alt" id="git-pull-icon"></i> Git Pull
+        </button>
+        @endif
+
         @if($logApp->script_path && $logApp->canRunScript(auth()->user()))
         <button class="btn btn-warning" id="btn-execute" onclick="executeScript()">
             <i class="fas fa-terminal" id="exec-icon"></i> Run Script
         </button>
         @endif
-        
-        @if($logApp->git_branch && $logApp->canGitPull(auth()->user()))
-        <button class="btn btn-info" id="btn-git-pull" onclick="showGitPullModal()">
-            <i class="fab fa-git-alt" id="git-pull-icon"></i> Git Pull
+
+        @if($logApp->canRestart(auth()->user()))
+        <button class="btn btn-danger" id="btn-restart" onclick="executeRestart()">
+            <i class="fas fa-redo" id="restart-icon"></i> Restart
         </button>
+        @endif
+
+        @if(!empty($logApp->custom_buttons))
+            @foreach($logApp->custom_buttons as $idx => $btn)
+                @if($logApp->canRunCustomButton(auth()->user(), $btn))
+                <button class="btn btn-secondary btn-custom-action" onclick="executeCustomButton({{ $idx }}, this)">
+                    <i class="fas fa-play"></i> {{ $btn['label'] ?? 'Button '.($idx+1) }}
+                </button>
+                @endif
+            @endforeach
         @endif
     </div>
     <div class="log-controls-right">
@@ -351,6 +367,8 @@
 const FETCH_URL = "{{ route('logs.fetch', $logApp) }}";
 const EXECUTE_URL = "{{ route('logs.execute', $logApp) }}";
 const GIT_PULL_URL = "{{ route('logs.git-pull', $logApp) }}";
+const RESTART_URL = "{{ route('logs.restart', $logApp) }}";
+const BUTTON_BASE_URL = "{{ rtrim(route('logs.button', [$logApp, 0]), '0') }}";
 let autoRefreshInterval = null;
 let isLoading = false;
 let rawLines = [];
@@ -569,6 +587,86 @@ async function executeScript() {
     } finally {
         btn.disabled = false;
         icon.className = 'fas fa-terminal';
+    }
+}
+
+async function executeRestart() {
+    const confirmed = await confirm('Bạn có chắc muốn chạy lệnh Restart không?', {
+        title: 'Xác nhận Restart'
+    });
+    if (!confirmed) return;
+
+    const btn = document.getElementById('btn-restart');
+    const icon = document.getElementById('restart-icon');
+    if (!btn) return;
+
+    btn.disabled = true;
+    icon.className = 'fas fa-spinner fa-spin';
+    setStatus('loading', 'Đang thực thi lệnh restart...');
+
+    try {
+        const res = await fetch(RESTART_URL, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            setStatus('success', 'Restart hoàn thành');
+            showOutput('Restart thành công!', data.output || 'Không có output', 'success');
+            loadLogs();
+        } else {
+            setStatus('error', 'Restart lỗi');
+            showError(data.error, 'Lỗi Restart');
+        }
+    } catch (e) {
+        setStatus('error', 'Lỗi kết nối');
+        showError('Lỗi kết nối: ' + e.message, 'Lỗi kết nối');
+    } finally {
+        btn.disabled = false;
+        icon.className = 'fas fa-redo';
+    }
+}
+
+async function executeCustomButton(index, btnEl) {
+    const label = btnEl.textContent.trim();
+    const confirmed = await confirm(`Bạn có chắc muốn chạy "${label}" không?`, {
+        title: 'Xác nhận thực thi'
+    });
+    if (!confirmed) return;
+
+    const origHtml = btnEl.innerHTML;
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang chạy...';
+    setStatus('loading', `Đang thực thi ${label}...`);
+
+    try {
+        const res = await fetch(BUTTON_BASE_URL + index, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            setStatus('success', `${label} hoàn thành`);
+            showOutput(`${label} – Thành công!`, data.output || 'Không có output', 'success');
+            loadLogs();
+        } else {
+            setStatus('error', `${label} lỗi`);
+            showError(data.error, `Lỗi: ${label}`);
+        }
+    } catch (e) {
+        setStatus('error', 'Lỗi kết nối');
+        showError('Lỗi kết nối: ' + e.message, 'Lỗi kết nối');
+    } finally {
+        btnEl.disabled = false;
+        btnEl.innerHTML = origHtml;
     }
 }
 

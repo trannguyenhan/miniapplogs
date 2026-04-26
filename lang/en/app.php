@@ -112,6 +112,7 @@ return [
     'connection_type'            => 'Type',
     'connection_local'           => 'Local',
     'connection_ssh'             => 'SSH',
+    'connection_agent'           => 'HTTP Agent',
     'confirm_delete_server'      => 'Delete this server? All associated applications will also be deleted!',
 
     // Log Applications

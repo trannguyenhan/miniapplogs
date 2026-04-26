@@ -112,6 +112,7 @@ return [
     'connection_type'            => 'Loại',
     'connection_local'           => 'Local',
     'connection_ssh'             => 'SSH',
+    'connection_agent'           => 'HTTP Agent',
     'confirm_delete_server'      => 'Xóa server này? Tất cả ứng dụng liên quan sẽ bị xóa!',
 
     // Log Applications

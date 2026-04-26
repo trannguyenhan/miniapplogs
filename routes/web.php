@@ -38,6 +38,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/logs/{logApp}/fetch', [LogViewController::class, 'fetch'])->name('logs.fetch');
     Route::post('/logs/{logApp}/execute', [LogViewController::class, 'executeScript'])->name('logs.execute');
     Route::post('/logs/{logApp}/git-pull', [LogViewController::class, 'gitPull'])->name('logs.git-pull');
+    Route::post('/logs/{logApp}/restart', [LogViewController::class, 'executeRestart'])->name('logs.restart');
+    Route::post('/logs/{logApp}/button/{index}', [LogViewController::class, 'executeButton'])->name('logs.button');
 
     // Admin panel
     Route::prefix('admin')->name('admin.')->middleware(['role:admin'])->group(function () {

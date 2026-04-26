@@ -52,8 +52,10 @@
                         @endif
                     </td>
                     <td>
-                        @if($server->use_ssh)
+                        @if($server->connection_type === 'ssh')
                             <span class="badge badge-info"><i class="fas fa-network-wired"></i> {{ __('app.connection_ssh') }}</span>
+                        @elseif($server->connection_type === 'agent')
+                            <span class="badge badge-warning"><i class="fas fa-plug"></i> {{ __('app.connection_agent') }}</span>
                         @else
                             <span class="badge badge-purple"><i class="fas fa-hdd"></i> {{ __('app.connection_local') }}</span>
                         @endif

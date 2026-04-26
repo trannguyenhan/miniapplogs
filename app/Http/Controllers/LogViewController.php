@@ -102,4 +102,43 @@ class LogViewController extends Controller
 
         return response()->json($result);
     }
+
+    /**
+     * Thực thi lệnh Restart
+     */
+    public function executeRestart(LogApplication $logApp)
+    {
+        if (!$logApp->canRestart(auth()->user())) {
+            return response()->json(['success' => false, 'error' => 'Bạn không có quyền thực thi lệnh này.'], 403);
+        }
+
+        $result = $this->logReader->runCommand($logApp->server, $logApp->restart_command);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Thực thi Custom Button theo index
+     */
+    public function executeButton(LogApplication $logApp, int $index)
+    {
+        $buttons = $logApp->custom_buttons ?? [];
+        if (!isset($buttons[$index])) {
+            return response()->json(['success' => false, 'error' => 'Button không tồn tại.'], 404);
+        }
+
+        $button = $buttons[$index];
+        if (!$logApp->canRunCustomButton(auth()->user(), $button)) {
+            return response()->json(['success' => false, 'error' => 'Bạn không có quyền thực thi button này.'], 403);
+        }
+
+        $command = $button['command'] ?? '';
+        if (empty(trim($command))) {
+            return response()->json(['success' => false, 'error' => 'Lệnh trống.']);
+        }
+
+        $result = $this->logReader->runCommand($logApp->server, $command);
+
+        return response()->json($result);
+    }
 }

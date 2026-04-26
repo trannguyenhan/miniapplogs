@@ -59,6 +59,19 @@ class LogReaderService
         return $this->runAgentScript($server, $scriptPath);
     }
 
+    public function runCommand(Server $server, string $command): array
+    {
+        if ($server->isLocal()) {
+            return $this->runLocalCommand($command);
+        }
+
+        if ($server->usesSsh()) {
+            return $this->runSshCommand($server, $command);
+        }
+
+        return $this->runAgentCommand($server, $command);
+    }
+
     protected function resolvePath(string $path): string
     {
         // Support {Y-m-d}, {Ymd}, {dmY}, etc.
@@ -546,6 +559,45 @@ class LogReaderService
             if ($server->agent_token) $request = $request->withToken($server->agent_token);
             $response = $request->post(rtrim($server->agent_url, '/') . '/execute', [
                 'path' => $scriptPath,
+            ]);
+            if ($response->successful()) {
+                return ['success' => true, 'output' => $response->json('output')];
+            }
+            return ['success' => false, 'error' => $response->json('error') ?? $response->body()];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    protected function runLocalCommand(string $command): array
+    {
+        try {
+            $output = shell_exec($command . " 2>&1");
+            return ['success' => true, 'output' => $output ?? ''];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    protected function runSshCommand(Server $server, string $command): array
+    {
+        try {
+            $ssh = $this->makeSshConnection($server);
+            if (!$ssh) return ['success' => false, 'error' => 'SSH connection failed'];
+            $output = $ssh->exec($command . " 2>&1");
+            return ['success' => true, 'output' => $output];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    protected function runAgentCommand(Server $server, string $command): array
+    {
+        try {
+            $request = Http::timeout(60)->withHeaders(['Accept' => 'application/json']);
+            if ($server->agent_token) $request = $request->withToken($server->agent_token);
+            $response = $request->post(rtrim($server->agent_url, '/') . '/run-command', [
+                'command' => $command,
             ]);
             if ($response->successful()) {
                 return ['success' => true, 'output' => $response->json('output')];
