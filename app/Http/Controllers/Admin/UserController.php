@@ -38,7 +38,7 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'Tài khoản "' . $validated['name'] . '" đã được tạo thành công!');
+            ->with('success', __('app.user_added', ['name' => $validated['name']]));
     }
 
     public function edit(User $user)
@@ -66,19 +66,19 @@ class UserController extends Controller
         $user->save();
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'Tài khoản "' . $user->name . '" đã được cập nhật!');
+            ->with('success', __('app.user_updated', ['name' => $user->name]));
     }
 
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
-            return back()->with('error', 'Không thể xóa tài khoản của chính bạn!');
+            return back()->with('error', __('app.cannot_delete_self'));
         }
 
         $name = $user->name;
         $user->delete();
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'Tài khoản "' . $name . '" đã được xóa!');
+            ->with('success', __('app.user_deleted', ['name' => $name]));
     }
 }

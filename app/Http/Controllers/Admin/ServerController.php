@@ -57,7 +57,7 @@ class ServerController extends Controller
         Server::create($validated);
 
         return redirect()->route('admin.servers.index')
-            ->with('success', 'Server "' . $validated['name'] . '" đã được thêm thành công!');
+            ->with('success', __('app.server_added', ['name' => $validated['name']]));
     }
 
     public function show(Server $server)
@@ -123,7 +123,7 @@ class ServerController extends Controller
         $server->update($validated);
 
         return redirect()->route('admin.servers.index')
-            ->with('success', 'Server "' . $server->name . '" đã được cập nhật!');
+            ->with('success', __('app.server_updated', ['name' => $server->name]));
     }
 
     public function destroy(Server $server)
@@ -131,7 +131,7 @@ class ServerController extends Controller
         $name = $server->name;
         $server->delete();
         return redirect()->route('admin.servers.index')
-            ->with('success', 'Server "' . $name . '" đã được xóa!');
+            ->with('success', __('app.server_deleted', ['name' => $name]));
     }
 
     /**
@@ -163,15 +163,38 @@ class ServerController extends Controller
      */
     public function testAgent(Request $request)
     {
+        $request->validate([
+            'agent_url'   => 'required|url|max:512',
+            'agent_token' => 'nullable|string|max:512',
+        ]);
+
         $url   = $request->input('agent_url');
         $token = $request->input('agent_token', '');
 
-        if (! $url) {
-            return response()->json(['success' => false, 'error' => 'agent_url is required'], 422);
+        // Block SSRF: only allow http/https, disallow private/loopback addresses
+        $parsed = parse_url($url);
+        $scheme = strtolower($parsed['scheme'] ?? '');
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return response()->json(['success' => false, 'error' => 'Only http/https URLs are allowed.'], 422);
+        }
+        $host = $parsed['host'] ?? '';
+        if ($this->isPrivateHost($host)) {
+            return response()->json(['success' => false, 'error' => 'URL trỏ đến địa chỉ nội bộ không được phép.'], 422);
         }
 
         $result = app(LogReaderService::class)->pingAgent($url, $token);
         return response()->json($result);
+    }
+
+    private function isPrivateHost(string $host): bool
+    {
+        // Resolve hostname to IP for check
+        $ip = filter_var($host, FILTER_VALIDATE_IP) ? $host : gethostbyname($host);
+        if (! filter_var($ip, FILTER_VALIDATE_IP)) {
+            return false; // Can't resolve, let it fail naturally
+        }
+        // Block loopback, private ranges, link-local
+        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }
 
     /**

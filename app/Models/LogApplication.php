@@ -17,6 +17,7 @@ class LogApplication extends Model
         'restart_command',
         'restart_role',
         'custom_buttons',
+        'tags',
         'git_branch',
         'git_path',
         'git_pull_role',
@@ -27,6 +28,7 @@ class LogApplication extends Model
     protected $casts = [
         'is_active'      => 'boolean',
         'custom_buttons' => 'array',
+        'tags'           => 'array',
     ];
 
     public function server(): BelongsTo

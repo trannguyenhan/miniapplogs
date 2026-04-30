@@ -35,8 +35,11 @@ class Server extends Model
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'ssh_port'  => 'integer',
+        'is_active'       => 'boolean',
+        'ssh_port'        => 'integer',
+        'ssh_password'    => 'encrypted',
+        'ssh_private_key' => 'encrypted',
+        'agent_token'     => 'encrypted',
     ];
 
     public function isLocal(): bool

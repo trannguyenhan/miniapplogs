@@ -206,6 +206,29 @@
                 </div>
 
                 <div class="form-group">
+                    <label class="form-label">Tags</label>
+                    @php $selectedTags = old('tags', $logApp->tags ?? []); @endphp
+
+                    @if($tags->isEmpty())
+                        <div class="form-hint">Chưa có tag nào. Vào <a href="{{ route('admin.tags.create') }}" style="color: var(--accent);">Quản lý Tag</a> để tạo trước.</div>
+                    @else
+                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;">
+                            @foreach($tags as $tag)
+                                <label style="display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--bg-secondary); border-radius:999px; padding:6px 10px; cursor:pointer;">
+                                    <input type="checkbox" name="tags[]" value="{{ $tag->name }}"
+                                           {{ in_array($tag->name, $selectedTags, true) ? 'checked' : '' }}>
+                                    <span>{{ $tag->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <div class="form-hint">Chọn một hoặc nhiều tag đã tạo sẵn.</div>
+                    @endif
+
+                    @error('tags') <div class="form-error">{{ $message }}</div> @enderror
+                    @error('tags.*') <div class="form-error">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="form-group">
                     <label class="form-label" for="description">Mô tả</label>
                     <textarea id="description" name="description" class="form-control" rows="2">{{ old('description', $logApp->description) }}</textarea>
                 </div>

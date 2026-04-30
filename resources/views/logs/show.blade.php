@@ -3,7 +3,7 @@
 @section('title', 'Log: ' . $logApp->name)
 
 @section('breadcrumb')
-    <a href="{{ route('logs.index') }}" style="color: var(--text-secondary); text-decoration:none;">Danh sách</a>
+    <a href="{{ route('logs.index') }}" style="color: var(--text-secondary); text-decoration:none;">{{ __('app.page_dashboard') }}</a>
     @if(auth()->user()->role === 'admin')
     <span class="sep">/</span>
     <span style="color: var(--text-muted);">{{ $logApp->server->name }}</span>
@@ -240,21 +240,21 @@
 <div class="log-controls">
     <div class="log-controls-left">
         <button class="btn btn-primary" id="btn-reload" onclick="loadLogs()">
-            <i class="fas fa-sync-alt" id="reload-icon"></i> Reload
+            <i class="fas fa-sync-alt" id="reload-icon"></i> {{ __('app.btn_reload') }}
         </button>
         <button class="btn btn-secondary" onclick="scrollToBottom()">
-            <i class="fas fa-arrow-down"></i> Cuối
+            <i class="fas fa-arrow-down"></i> {{ __('app.btn_bottom') }}
         </button>
         <button class="btn btn-secondary" onclick="copyLogs()">
-            <i class="fas fa-copy"></i> Copy
+            <i class="fas fa-copy"></i> {{ __('app.btn_copy') }}
         </button>
 
         <select id="lines-select" class="btn btn-secondary" style="cursor:pointer;" onchange="loadLogs()">
-            <option value="200">200 dòng</option>
-            <option value="500">500 dòng</option>
-            <option value="1000" selected>1000 dòng</option>
-            <option value="2000">2000 dòng</option>
-            <option value="5000">5000 dòng</option>
+            <option value="200">200 {{ __('app.lines') }}</option>
+            <option value="500">500 {{ __('app.lines') }}</option>
+            <option value="1000" selected>1000 {{ __('app.lines') }}</option>
+            <option value="2000">2000 {{ __('app.lines') }}</option>
+            <option value="5000">5000 {{ __('app.lines') }}</option>
         </select>
 
         @if($logApp->git_branch && $logApp->canGitPull(auth()->user()))
@@ -278,7 +278,7 @@
         @if(!empty($logApp->custom_buttons))
             @foreach($logApp->custom_buttons as $idx => $btn)
                 @if($logApp->canRunCustomButton(auth()->user(), $btn))
-                <button class="btn btn-secondary btn-custom-action" onclick="executeCustomButton({{ $idx }}, this)">
+                <button class="btn btn-secondary btn-custom-action" data-btn-index="{{ $idx }}" onclick="executeCustomButton(Number(this.dataset.btnIndex), this)">
                     <i class="fas fa-play"></i> {{ $btn['label'] ?? 'Button '.($idx+1) }}
                 </button>
                 @endif
@@ -288,7 +288,7 @@
     <div class="log-controls-right">
         <div class="status-indicator">
             <div class="status-dot" id="status-dot"></div>
-            <span id="status-text">Sẵn sàng</span>
+            <span id="status-text">{{ __('app.ready') }}</span>
         </div>
         <span id="fetched-at" style="font-size:11px; color: var(--text-muted);"></span>
     </div>
@@ -297,9 +297,9 @@
 <div class="log-wrapper">
     <div class="search-bar">
         <i class="fas fa-search" style="color: var(--text-muted); font-size:12px;"></i>
-        <input type="text" id="search-input" class="search-input" placeholder="Tìm kiếm trong log... (Enter)" onkeyup="searchLog(event)">
+        <input type="text" id="search-input" class="search-input" placeholder="{{ __('app.search_placeholder') }} (Enter)" onkeyup="searchLog(event)">
         <span class="search-count" id="search-count"></span>
-        <button class="btn btn-sm btn-secondary" onclick="clearSearch()" title="Xóa tìm kiếm">
+        <button class="btn btn-sm btn-secondary" onclick="clearSearch()" title="{{ __('app.clear_search') }}">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -311,13 +311,13 @@
         @else
         <span class="log-header-title">{{ $logApp->name }}</span>
         @endif
-        <span class="log-stats" id="log-stats">Đang tải...</span>
+        <span class="log-stats" id="log-stats">{{ __('app.loading') }}</span>
     </div>
 
     <div id="log-container">
         <div class="error-state" id="empty-state" style="display:none;">
             <i class="fas fa-exclamation-triangle"></i>
-            <span id="empty-message">Không có nội dung</span>
+            <span id="empty-message">{{ __('app.no_data') }}</span>
             <pre id="error-detail" style="display:none;"></pre>
         </div>
         <div id="log-content"></div>
@@ -339,22 +339,22 @@
         </div>
         <div class="custom-modal-body">
             <p style="margin-bottom:16px;">
-                Pull code từ branch <strong>{{ $logApp->git_branch }}</strong>
+                {{ __('app.git_pull_from_branch') }} <strong>{{ $logApp->git_branch }}</strong>
             </p>
             <div style="padding:12px; background:var(--bg-secondary); border-radius:6px; margin-bottom:16px;">
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="git-no-rebase" style="cursor:pointer;">
-                    <span>Không rebase (--no-rebase)</span>
+                    <span>{{ __('app.git_no_rebase') }} (--no-rebase)</span>
                 </label>
                 <div style="font-size:12px; color:var(--text-muted); margin-top:6px; margin-left:24px;">
-                    Nếu check, sẽ chạy <code>git pull --no-rebase</code> thay vì <code>git pull</code>
+                    {{ __('app.git_no_rebase_hint') }}
                 </div>
             </div>
         </div>
         <div class="custom-modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeGitPullModal()">Hủy</button>
+            <button type="button" class="btn btn-secondary" onclick="closeGitPullModal()">{{ __('app.btn_cancel') }}</button>
             <button type="button" class="btn btn-primary" id="btn-confirm-git-pull" onclick="executeGitPull()">
-                <i class="fab fa-git-alt"></i> Pull Code
+                <i class="fab fa-git-alt"></i> {{ __('app.btn_git_pull') }}
             </button>
         </div>
     </div>
@@ -363,6 +363,45 @@
 @endsection
 
 @push('scripts')
+<script id="log-i18n" type="application/json">@json([
+    'loading' => __('app.loading'),
+    'error' => __('app.error'),
+    'linesCount' => __('app.lines_count', ['count' => ':count']),
+    'fetchedAt' => __('app.fetched_at'),
+    'loaded' => __('app.loaded_done'),
+    'cannotReadLog' => __('app.cannot_read_log'),
+    'connectionError' => __('app.connection_error'),
+    'emptyLog' => __('app.log_empty'),
+    'readError' => __('app.log_error'),
+    'copyDone' => __('app.copied'),
+    'copy' => __('app.btn_copy'),
+    'autoRefreshOff' => __('app.auto_refresh_off'),
+    'searchResults' => __('app.search_results', ['count' => ':count']),
+    'notFound' => __('app.not_found'),
+    'scriptConfirm' => __('app.confirm_run_script'),
+    'scriptConfirmTitle' => __('app.confirm_script_title'),
+    'executingScript' => __('app.executing_script'),
+    'scriptDone' => __('app.script_done'),
+    'scriptSuccess' => __('app.script_success'),
+    'noOutput' => __('app.no_output'),
+    'scriptError' => __('app.script_error'),
+    'restartConfirm' => __('app.restart_confirm'),
+    'restartConfirmTitle' => __('app.restart_confirm_title'),
+    'executingRestart' => __('app.executing_restart'),
+    'restartDone' => __('app.restart_done'),
+    'restartSuccess' => __('app.restart_success'),
+    'restartError' => __('app.restart_error'),
+    'customConfirm' => __('app.custom_confirm'),
+    'customConfirmTitle' => __('app.custom_confirm_title'),
+    'running' => __('app.running'),
+    'runningAction' => __('app.running_action', ['label' => ':label']),
+    'actionDone' => __('app.action_done', ['label' => ':label']),
+    'actionError' => __('app.action_error', ['label' => ':label']),
+    'actionSuccessTitle' => __('app.action_success_title', ['label' => ':label']),
+    'pullingCode' => __('app.pulling_code'),
+    'pullSuccess' => __('app.pull_success'),
+    'pullError' => __('app.pull_error'),
+])</script>
 <script>
 const FETCH_URL = "{{ route('logs.fetch', $logApp) }}";
 const EXECUTE_URL = "{{ route('logs.execute', $logApp) }}";
@@ -373,6 +412,7 @@ let autoRefreshInterval = null;
 let isLoading = false;
 let rawLines = [];
 let autoRefreshSeconds = 10;
+const i18n = JSON.parse(document.getElementById('log-i18n').textContent);
 
 // Status
 function setStatus(state, text) {
@@ -391,8 +431,8 @@ async function loadLogs() {
     icon.className = 'fas fa-spinner fa-spin';
     document.getElementById('btn-reload').disabled = true;
 
-    setStatus('loading', 'Đang tải...');
-    document.getElementById('log-stats').textContent = 'Đang tải...';
+    setStatus('loading', i18n.loading);
+    document.getElementById('log-stats').textContent = i18n.loading;
 
     try {
         const res = await fetch(`${FETCH_URL}?lines=${lines}&_=${Date.now()}`);
@@ -401,9 +441,9 @@ async function loadLogs() {
         if (data.success) {
             rawLines = data.lines;
             renderLogs(rawLines);
-            document.getElementById('log-stats').textContent = `${data.count} dòng`;
-            document.getElementById('fetched-at').textContent = 'Cập nhật: ' + data.fetched_at;
-            setStatus('success', 'Đã tải xong');
+            document.getElementById('log-stats').textContent = i18n.linesCount.replace(':count', data.count);
+            document.getElementById('fetched-at').textContent = i18n.fetchedAt + ': ' + data.fetched_at;
+            setStatus('success', i18n.loaded);
 
             // re-apply search if any
             const q = document.getElementById('search-input').value.trim();
@@ -411,12 +451,12 @@ async function loadLogs() {
 
             scrollToBottom();
         } else {
-            showError(data.error || 'Không thể đọc log');
-            setStatus('error', 'Lỗi');
+            showError(data.error || i18n.cannotReadLog);
+            setStatus('error', i18n.error || 'Error');
         }
     } catch (e) {
-        showError('Lỗi kết nối: ' + e.message);
-        setStatus('error', 'Lỗi kết nối');
+        showError(i18n.connectionError + ': ' + e.message);
+        setStatus('error', i18n.connectionError);
     } finally {
         isLoading = false;
         icon.className = 'fas fa-sync-alt';
@@ -440,7 +480,7 @@ function renderLogs(lines) {
     if (!lines || lines.length === 0) {
         container.innerHTML = '';
         emptyState.style.display = 'flex';
-        document.getElementById('empty-message').textContent = 'File log trống hoặc không có nội dung.';
+        document.getElementById('empty-message').textContent = i18n.emptyLog;
         return;
     }
 
@@ -463,11 +503,11 @@ function showError(message) {
     document.getElementById('log-content').innerHTML = '';
     const emptyState = document.getElementById('empty-state');
     emptyState.style.display = 'flex';
-    document.getElementById('empty-message').textContent = 'Không thể đọc log';
+    document.getElementById('empty-message').textContent = i18n.readError;
     const detail = document.getElementById('error-detail');
     detail.style.display = 'block';
     detail.textContent = message;
-    document.getElementById('log-stats').textContent = 'Lỗi';
+    document.getElementById('log-stats').textContent = i18n.error || 'Error';
 }
 
 function escapeHtml(str) {
@@ -487,8 +527,8 @@ function copyLogs() {
     if (!rawLines.length) return;
     navigator.clipboard.writeText(rawLines.join('\n')).then(() => {
         const btn = event.currentTarget;
-        btn.innerHTML = '<i class="fas fa-check"></i> Đã copy';
-        setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i> Copy', 2000);
+        btn.innerHTML = `<i class="fas fa-check"></i> ${i18n.copyDone}`;
+        setTimeout(() => btn.innerHTML = `<i class="fas fa-copy"></i> ${i18n.copy}`, 2000);
     });
 }
 
@@ -508,7 +548,7 @@ function toggleAutoRefresh() {
     } else {
         badge.className = 'badge badge-info';
         icon.className = 'fas fa-sync';
-        text.textContent = 'Auto-refresh: OFF';
+        text.textContent = i18n.autoRefreshOff;
         clearInterval(autoRefreshInterval);
     }
 }
@@ -536,7 +576,9 @@ function applySearch(q) {
         }
     });
 
-    document.getElementById('search-count').textContent = count > 0 ? `${count} kết quả` : 'Không tìm thấy';
+    document.getElementById('search-count').textContent = count > 0
+        ? i18n.searchResults.replace(':count', count)
+        : i18n.notFound;
 
     if (firstMatch) {
         firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -550,8 +592,8 @@ function clearSearch() {
 }
 
 async function executeScript() {
-    const confirmed = await confirm('Bạn có chắc muốn chạy script này không? (VD: Pull code & Restart)', {
-        title: 'Xác nhận thực thi script'
+    const confirmed = await confirm(i18n.scriptConfirm, {
+        title: i18n.scriptConfirmTitle
     });
     if (!confirmed) return;
 
@@ -561,7 +603,7 @@ async function executeScript() {
 
     btn.disabled = true;
     icon.className = 'fas fa-spinner fa-spin';
-    setStatus('loading', 'Đang thực thi script...');
+    setStatus('loading', i18n.executingScript);
 
     try {
         const res = await fetch(EXECUTE_URL, {
@@ -574,16 +616,16 @@ async function executeScript() {
         const data = await res.json();
 
         if (data.success) {
-            setStatus('success', 'Script hoàn thành');
-            showOutput('Thực thi thành công!', data.output || 'Không có output', 'success');
+            setStatus('success', i18n.scriptDone);
+            showOutput(i18n.scriptSuccess, data.output || i18n.noOutput, 'success');
             loadLogs(); // Reload logs after script
         } else {
-            setStatus('error', 'Script lỗi');
-            showError(data.error, 'Lỗi thực thi script');
+            setStatus('error', i18n.scriptError);
+            showError(data.error, i18n.scriptError);
         }
     } catch (e) {
-        setStatus('error', 'Lỗi kết nối');
-        showError('Lỗi kết nối: ' + e.message, 'Lỗi kết nối');
+        setStatus('error', i18n.connectionError);
+        showError(i18n.connectionError + ': ' + e.message, i18n.connectionError);
     } finally {
         btn.disabled = false;
         icon.className = 'fas fa-terminal';
@@ -591,8 +633,8 @@ async function executeScript() {
 }
 
 async function executeRestart() {
-    const confirmed = await confirm('Bạn có chắc muốn chạy lệnh Restart không?', {
-        title: 'Xác nhận Restart'
+    const confirmed = await confirm(i18n.restartConfirm, {
+        title: i18n.restartConfirmTitle
     });
     if (!confirmed) return;
 
@@ -602,7 +644,7 @@ async function executeRestart() {
 
     btn.disabled = true;
     icon.className = 'fas fa-spinner fa-spin';
-    setStatus('loading', 'Đang thực thi lệnh restart...');
+    setStatus('loading', i18n.executingRestart);
 
     try {
         const res = await fetch(RESTART_URL, {
@@ -615,16 +657,16 @@ async function executeRestart() {
         const data = await res.json();
 
         if (data.success) {
-            setStatus('success', 'Restart hoàn thành');
-            showOutput('Restart thành công!', data.output || 'Không có output', 'success');
+            setStatus('success', i18n.restartDone);
+            showOutput(i18n.restartSuccess, data.output || i18n.noOutput, 'success');
             loadLogs();
         } else {
-            setStatus('error', 'Restart lỗi');
-            showError(data.error, 'Lỗi Restart');
+            setStatus('error', i18n.restartError);
+            showError(data.error, i18n.restartError);
         }
     } catch (e) {
-        setStatus('error', 'Lỗi kết nối');
-        showError('Lỗi kết nối: ' + e.message, 'Lỗi kết nối');
+        setStatus('error', i18n.connectionError);
+        showError(i18n.connectionError + ': ' + e.message, i18n.connectionError);
     } finally {
         btn.disabled = false;
         icon.className = 'fas fa-redo';
@@ -633,15 +675,15 @@ async function executeRestart() {
 
 async function executeCustomButton(index, btnEl) {
     const label = btnEl.textContent.trim();
-    const confirmed = await confirm(`Bạn có chắc muốn chạy "${label}" không?`, {
-        title: 'Xác nhận thực thi'
+    const confirmed = await confirm(i18n.customConfirm.replace(':label', label), {
+        title: i18n.customConfirmTitle
     });
     if (!confirmed) return;
 
     const origHtml = btnEl.innerHTML;
     btnEl.disabled = true;
-    btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang chạy...';
-    setStatus('loading', `Đang thực thi ${label}...`);
+    btnEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${i18n.running}`;
+    setStatus('loading', i18n.runningAction.replace(':label', label));
 
     try {
         const res = await fetch(BUTTON_BASE_URL + index, {
@@ -654,16 +696,16 @@ async function executeCustomButton(index, btnEl) {
         const data = await res.json();
 
         if (data.success) {
-            setStatus('success', `${label} hoàn thành`);
-            showOutput(`${label} – Thành công!`, data.output || 'Không có output', 'success');
+            setStatus('success', i18n.actionDone.replace(':label', label));
+            showOutput(i18n.actionSuccessTitle.replace(':label', label), data.output || i18n.noOutput, 'success');
             loadLogs();
         } else {
-            setStatus('error', `${label} lỗi`);
-            showError(data.error, `Lỗi: ${label}`);
+            setStatus('error', i18n.actionError.replace(':label', label));
+            showError(data.error, i18n.actionError.replace(':label', label));
         }
     } catch (e) {
-        setStatus('error', 'Lỗi kết nối');
-        showError('Lỗi kết nối: ' + e.message, 'Lỗi kết nối');
+        setStatus('error', i18n.connectionError);
+        showError(i18n.connectionError + ': ' + e.message, i18n.connectionError);
     } finally {
         btnEl.disabled = false;
         btnEl.innerHTML = origHtml;
@@ -696,7 +738,7 @@ async function executeGitPull() {
     btn.disabled = true;
     gitPullBtn.disabled = true;
     if (gitPullIcon) gitPullIcon.className = 'fab fa-git-alt fa-spin';
-    setStatus('loading', 'Đang pull code...');
+    setStatus('loading', i18n.pullingCode);
     closeGitPullModal();
     
     try {
@@ -712,16 +754,16 @@ async function executeGitPull() {
         const data = await res.json();
         
         if (data.success) {
-            setStatus('success', 'Pull code thành công');
-            showOutput('Git Pull thành công!', data.output || 'Không có output', 'success');
+            setStatus('success', i18n.pullSuccess);
+            showOutput(i18n.pullSuccess, data.output || i18n.noOutput, 'success');
             loadLogs(); // Reload logs after git pull
         } else {
-            setStatus('error', 'Pull code lỗi');
-            showError(data.error, 'Lỗi Git Pull');
+            setStatus('error', i18n.pullError);
+            showError(data.error, i18n.pullError);
         }
     } catch (e) {
-        setStatus('error', 'Lỗi kết nối');
-        showError('Lỗi kết nối: ' + e.message, 'Lỗi kết nối');
+        setStatus('error', i18n.connectionError);
+        showError(i18n.connectionError + ': ' + e.message, i18n.connectionError);
     } finally {
         btn.disabled = false;
         gitPullBtn.disabled = false;

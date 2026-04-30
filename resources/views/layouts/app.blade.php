@@ -601,6 +601,10 @@
                     <i class="fas fa-file-alt"></i>
                     {{ __('app.nav_log_apps') }}
                 </a>
+                <a href="{{ route('admin.tags.index') }}" class="nav-item {{ request()->routeIs('admin.tags.*') ? 'active' : '' }}">
+                    <i class="fas fa-tags"></i>
+                    {{ __('app.nav_tags') }}
+                </a>
                 <a href="{{ route('admin.users.index') }}" class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                     <i class="fas fa-users"></i>
                     {{ __('app.nav_users') }}
@@ -630,6 +634,9 @@
                     </div>
                 </div>
             </div>
+            <a href="{{ route('profile.edit') }}" class="btn btn-secondary" style="width:100%; justify-content:center; margin-bottom:8px;">
+                <i class="fas fa-user-edit"></i> {{ __('app.profile') }}
+            </a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="btn btn-secondary" style="width:100%; justify-content:center;">
@@ -694,7 +701,7 @@
             <div class="custom-modal-icon" id="modal-icon">
                 <i class="fas fa-info-circle"></i>
             </div>
-            <h3 class="custom-modal-title" id="modal-title">Thông báo</h3>
+            <h3 class="custom-modal-title" id="modal-title">{{ __('app.notice') }}</h3>
             <button type="button" class="custom-modal-close" onclick="closeModal()">
                 <i class="fas fa-times"></i>
             </button>
@@ -704,7 +711,7 @@
             <div id="modal-content" style="display:none;"></div>
         </div>
         <div class="custom-modal-footer" id="modal-footer">
-            <button type="button" class="btn btn-secondary" id="modal-btn-cancel" onclick="closeModal()" style="display:none;">Hủy</button>
+            <button type="button" class="btn btn-secondary" id="modal-btn-cancel" onclick="closeModal()" style="display:none;">{{ __('app.btn_cancel') }}</button>
             <button type="button" class="btn btn-primary" id="modal-btn-ok" onclick="confirmModal()">OK</button>
         </div>
     </div>
@@ -712,10 +719,20 @@
 
 @stack('scripts')
 
+<script id="modal-i18n" type="application/json">{!! json_encode([
+    'notice' => __('app.notice'),
+    'confirm' => __('app.confirm'),
+    'cancel' => __('app.btn_cancel'),
+    'success' => __('app.success'),
+    'error' => __('app.error'),
+    'confirmDeleteTitle' => __('app.confirm_delete_title'),
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+
 <script>
 // Custom Modal System
 let modalResolve = null;
 let modalType = 'alert'; // 'alert' or 'confirm'
+const i18n = JSON.parse(document.getElementById('modal-i18n').textContent);
 
 function showModal(options) {
     const modal = document.getElementById('custom-modal');
@@ -744,7 +761,7 @@ function showModal(options) {
     icon.style.color = iconData.color;
     
     // Set title
-    title.textContent = options.title || 'Thông báo';
+    title.textContent = options.title || i18n.notice;
     
     // Set message
     message.textContent = options.message || '';
@@ -762,7 +779,7 @@ function showModal(options) {
     // Set buttons
     if (modalType === 'confirm') {
         btnCancel.style.display = '';
-        btnOk.textContent = options.confirmText || 'Xác nhận';
+        btnOk.textContent = options.confirmText || i18n.confirm;
         btnOk.className = 'btn btn-primary';
     } else {
         btnCancel.style.display = 'none';
@@ -807,7 +824,7 @@ window.alert = function(message, options = {}) {
     return showModal({
         type: 'alert',
         icon: options.icon || 'info',
-        title: options.title || 'Thông báo',
+        title: options.title || i18n.notice,
         message: message
     });
 };
@@ -821,15 +838,15 @@ window.confirm = function(message, options = {}) {
     return showModal({
         type: 'confirm',
         icon: options.icon || 'question',
-        title: options.title || 'Xác nhận',
+        title: options.title || i18n.confirm,
         message: message,
-        confirmText: options.confirmText || 'Xác nhận',
-        cancelText: options.cancelText || 'Hủy'
+        confirmText: options.confirmText || i18n.confirm,
+        cancelText: options.cancelText || i18n.cancel
     });
 };
 
 // Helper for success messages
-window.showSuccess = function(message, title = 'Thành công') {
+    window.showSuccess = function(message, title = i18n.success) {
     return showModal({
         type: 'alert',
         icon: 'success',
@@ -839,7 +856,7 @@ window.showSuccess = function(message, title = 'Thành công') {
 };
 
 // Helper for error messages
-window.showError = function(message, title = 'Lỗi') {
+window.showError = function(message, title = i18n.error) {
     return showModal({
         type: 'alert',
         icon: 'error',
@@ -874,7 +891,7 @@ async function confirmDelete(event, message) {
     event.preventDefault();
     const form = event.target;
     const confirmed = await confirm(message, {
-        title: 'Xác nhận xóa',
+        title: i18n.confirmDeleteTitle,
         icon: 'warning'
     });
     if (confirmed) {

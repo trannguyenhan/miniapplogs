@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Admin\LogApplicationController;
 use App\Http\Controllers\Admin\ServerController;
+use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\LogViewController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 // Language switcher
@@ -41,6 +43,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/logs/{logApp}/restart', [LogViewController::class, 'executeRestart'])->name('logs.restart');
     Route::post('/logs/{logApp}/button/{index}', [LogViewController::class, 'executeButton'])->name('logs.button');
 
+    // Profile (tất cả user đều có thể sửa thông tin của mình)
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
     // Admin panel
     Route::prefix('admin')->name('admin.')->middleware(['role:admin'])->group(function () {
 
@@ -57,6 +63,9 @@ Route::middleware(['auth'])->group(function () {
 
         // Log Applications CRUD
         Route::resource('log-apps', LogApplicationController::class);
+
+        // Tags CRUD
+        Route::resource('tags', TagController::class)->except(['show']);
 
         // Users management
         Route::get('/users',             [UserController::class, 'index'])->name('users.index');

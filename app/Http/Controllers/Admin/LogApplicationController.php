@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\LogApplication;
 use App\Models\Server;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 
 class LogApplicationController extends Controller
@@ -18,7 +19,8 @@ class LogApplicationController extends Controller
     public function create()
     {
         $servers = Server::where('is_active', true)->orderBy('name')->get();
-        return view('admin.log-apps.create', compact('servers'));
+        $tags = Tag::orderBy('name')->get();
+        return view('admin.log-apps.create', compact('servers', 'tags'));
     }
 
     public function store(Request $request)
@@ -35,6 +37,8 @@ class LogApplicationController extends Controller
             'git_branch'    => 'nullable|string|max:255',
             'git_path'      => 'nullable|string|max:1000',
             'git_pull_role' => 'nullable|in:admin,user',
+            'tags'          => 'nullable|array',
+            'tags.*'        => 'string|exists:tags,name',
             'btn_labels'    => 'nullable|array',
             'btn_labels.*'  => 'nullable|string|max:255',
             'btn_commands'  => 'nullable|array',
@@ -49,12 +53,13 @@ class LogApplicationController extends Controller
         $validated['git_pull_role']  = $request->input('git_pull_role', 'admin');
         $validated['script_role']    = $request->input('script_role', 'admin');
         $validated['restart_role']   = $request->input('restart_role', 'admin');
+        $validated['tags']           = $this->normalizeSelectedTags($request->input('tags', []));
         $validated['custom_buttons'] = $this->parseCustomButtons($request);
 
         $app = LogApplication::create($validated);
 
         return redirect()->route('admin.log-apps.index')
-            ->with('success', 'Ứng dụng "' . $app->name . '" đã được thêm thành công!');
+            ->with('success', __('app.app_added', ['name' => $app->name]));
     }
 
     public function show(LogApplication $logApp)
@@ -66,7 +71,8 @@ class LogApplicationController extends Controller
     public function edit(LogApplication $logApp)
     {
         $servers = Server::where('is_active', true)->orderBy('name')->get();
-        return view('admin.log-apps.edit', compact('logApp', 'servers'));
+        $tags = Tag::orderBy('name')->get();
+        return view('admin.log-apps.edit', compact('logApp', 'servers', 'tags'));
     }
 
     public function update(Request $request, LogApplication $logApp)
@@ -83,6 +89,8 @@ class LogApplicationController extends Controller
             'git_branch'    => 'nullable|string|max:255',
             'git_path'      => 'nullable|string|max:1000',
             'git_pull_role' => 'nullable|in:admin,user',
+            'tags'          => 'nullable|array',
+            'tags.*'        => 'string|exists:tags,name',
             'btn_labels'    => 'nullable|array',
             'btn_labels.*'  => 'nullable|string|max:255',
             'btn_commands'  => 'nullable|array',
@@ -97,12 +105,13 @@ class LogApplicationController extends Controller
         $validated['git_pull_role']  = $request->input('git_pull_role', 'admin');
         $validated['script_role']    = $request->input('script_role', 'admin');
         $validated['restart_role']   = $request->input('restart_role', 'admin');
+        $validated['tags']           = $this->normalizeSelectedTags($request->input('tags', []));
         $validated['custom_buttons'] = $this->parseCustomButtons($request);
 
         $logApp->update($validated);
 
         return redirect()->route('admin.log-apps.index')
-            ->with('success', 'Ứng dụng "' . $logApp->name . '" đã được cập nhật!');
+            ->with('success', __('app.app_updated', ['name' => $logApp->name]));
     }
 
     public function destroy(LogApplication $logApp)
@@ -110,7 +119,17 @@ class LogApplicationController extends Controller
         $name = $logApp->name;
         $logApp->delete();
         return redirect()->route('admin.log-apps.index')
-            ->with('success', 'Ứng dụng "' . $name . '" đã được xóa!');
+            ->with('success', __('app.app_deleted', ['name' => $name]));
+    }
+
+    private function normalizeSelectedTags(array $tags): ?array
+    {
+        $normalized = array_values(array_unique(array_filter(array_map(
+            static fn ($tag) => trim((string) $tag),
+            $tags
+        ))));
+
+        return empty($normalized) ? null : $normalized;
     }
 
     private function parseCustomButtons(Request $request): ?array

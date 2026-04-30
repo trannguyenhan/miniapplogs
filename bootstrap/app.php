@@ -11,7 +11,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');
+        // Trust only the reverse proxy in front of this app.
+        // Set TRUSTED_PROXIES=* in .env ONLY if you are behind a load balancer you trust fully.
+        $trustedProxies = env('TRUSTED_PROXIES', null);
+        if ($trustedProxies) {
+            $middleware->trustProxies(at: $trustedProxies);
+        }
 
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,

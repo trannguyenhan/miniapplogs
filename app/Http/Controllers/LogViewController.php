@@ -14,14 +14,44 @@ class LogViewController extends Controller
     /**
      * Trang chủ - danh sách tất cả ứng dụng
      */
-    public function index()
+    public function index(Request $request)
     {
-        $servers = Server::with('activeLogApplications')
+        $apps = LogApplication::with('server')
             ->where('is_active', true)
+            ->whereHas('server', fn($q) => $q->where('is_active', true))
             ->orderBy('name')
             ->get();
 
-        return view('logs.index', compact('servers'));
+        // Group by tag for user view
+        $tagFilter = $request->query('tag');
+        $allTags = $apps->flatMap(fn($a) => $a->tags ?? [])->unique()->sort()->values();
+
+        if ($tagFilter) {
+            $apps = $apps->filter(fn($a) => in_array($tagFilter, $a->tags ?? [], true));
+        }
+
+        // Group: apps with tags grouped, untagged separate
+        $grouped = [];
+        foreach ($apps as $app) {
+            $tags = $app->tags ?? [];
+            if (empty($tags)) {
+                $grouped['__untagged'][] = $app;
+            } else {
+                foreach ($tags as $tag) {
+                    $grouped[$tag][] = $app;
+                }
+            }
+        }
+        ksort($grouped);
+
+        // Admins also still get servers for admin view
+        $servers = null;
+        if (auth()->user()->isAdmin()) {
+            $servers = \App\Models\Server::with('activeLogApplications')
+                ->where('is_active', true)->orderBy('name')->get();
+        }
+
+        return view('logs.index', compact('grouped', 'allTags', 'tagFilter', 'apps', 'servers'));
     }
 
     /**
@@ -72,7 +102,7 @@ class LogViewController extends Controller
             return response()->json(['success' => false, 'error' => 'Bạn không có quyền thực thi script này.'], 403);
         }
 
-        $result = $this->logReader->runScript($logApp->server, $logApp->script_path);
+        $result = $this->logReader->runScript($logApp->server, $logApp->script_path, $logApp->git_path);
 
         return response()->json($result);
     }
@@ -112,7 +142,11 @@ class LogViewController extends Controller
             return response()->json(['success' => false, 'error' => 'Bạn không có quyền thực thi lệnh này.'], 403);
         }
 
-        $result = $this->logReader->runCommand($logApp->server, $logApp->restart_command);
+        $command = $logApp->restart_command;
+        if (!empty($logApp->git_path)) {
+            $command = 'cd ' . escapeshellarg($logApp->git_path) . ' && ' . $command;
+        }
+        $result = $this->logReader->runCommand($logApp->server, $command);
 
         return response()->json($result);
     }
@@ -135,6 +169,10 @@ class LogViewController extends Controller
         $command = $button['command'] ?? '';
         if (empty(trim($command))) {
             return response()->json(['success' => false, 'error' => 'Lệnh trống.']);
+        }
+
+        if (!empty($logApp->git_path)) {
+            $command = 'cd ' . escapeshellarg($logApp->git_path) . ' && ' . $command;
         }
 
         $result = $this->logReader->runCommand($logApp->server, $command);

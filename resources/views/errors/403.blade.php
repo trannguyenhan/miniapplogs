@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>403 - Không có quyền | MiniAppLogs</title>
+    <title>403 - {{ __('app.forbidden_title') }} | MiniAppLogs</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
@@ -21,9 +21,9 @@
     <div class="container">
         <div class="icon"><i class="fas fa-shield-alt"></i></div>
         <h1>403</h1>
-        <h2>Không có quyền truy cập</h2>
-        <p>Bạn không có quyền truy cập trang này. Chỉ Admin mới có thể vào khu vực quản trị.</p>
-        <a href="{{ url('/logs') }}"><i class="fas fa-arrow-left"></i> Quay về trang log</a>
+        <h2>{{ __('app.forbidden_title') }}</h2>
+        <p>{{ __('app.forbidden_description') }}</p>
+        <a href="{{ url('/logs') }}"><i class="fas fa-arrow-left"></i> {{ __('app.back_to_logs') }}</a>
     </div>
 </body>
 </html>

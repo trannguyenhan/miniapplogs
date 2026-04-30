@@ -17,7 +17,11 @@ class LogReaderService
         if ($logType === 'journalctl') {
             // journalctl doesn't need path resolution
         } elseif ($logType !== 'docker') {
-            $logPath = $this->resolvePath($logPath);
+            try {
+                $logPath = $this->resolvePath($logPath);
+            } catch (\InvalidArgumentException $e) {
+                return ['success' => false, 'error' => $e->getMessage(), 'lines' => []];
+            }
         }
 
         if ($server->isLocal()) {
@@ -44,19 +48,16 @@ class LogReaderService
     }
 
     /**
-     * Thực thi script trên server.
+     * Thực thi script trên server, cd vào projectPath trước nếu có.
      */
-    public function runScript(Server $server, string $scriptPath): array
+    public function runScript(Server $server, string $scriptPath, ?string $projectPath = null): array
     {
-        if ($server->isLocal()) {
-            return $this->runLocalScript($scriptPath);
+        // Build command: cd <project_path> && bash <script>
+        $cmd = 'bash ' . escapeshellarg($scriptPath);
+        if (!empty($projectPath)) {
+            $cmd = 'cd ' . escapeshellarg($projectPath) . ' && ' . $cmd;
         }
-
-        if ($server->usesSsh()) {
-            return $this->runSshScript($server, $scriptPath);
-        }
-
-        return $this->runAgentScript($server, $scriptPath);
+        return $this->runCommand($server, $cmd);
     }
 
     public function runCommand(Server $server, string $command): array
@@ -75,9 +76,16 @@ class LogReaderService
     protected function resolvePath(string $path): string
     {
         // Support {Y-m-d}, {Ymd}, {dmY}, etc.
-        return preg_replace_callback('/\{([a-zA-Z\-_]+)\}/', function ($matches) {
+        $resolved = preg_replace_callback('/\{([a-zA-Z\-_]+)\}/', function ($matches) {
             return date($matches[1]);
         }, $path);
+
+        // Prevent path traversal: disallow directory traversal sequences
+        if (str_contains($resolved, '..')) {
+            throw new \InvalidArgumentException("Invalid log path: directory traversal detected.");
+        }
+
+        return $resolved;
     }
 
     // ── Local ─────────────────────────────────────────────────────────────────

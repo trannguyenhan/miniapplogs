@@ -14,7 +14,7 @@ class CheckRole
             if ($request->expectsJson()) {
                 return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
             }
-            abort(403, 'Bạn không có quyền truy cập trang này.');
+            abort(403, __('app.forbidden_access'));
         }
 
         return $next($request);

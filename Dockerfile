@@ -14,7 +14,7 @@ WORKDIR /app
 
 # Install dependencies (leverages layer cache when package.json unchanged)
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm ci --no-audit --no-fund
 
 # Copy only files needed for Vite build
 COPY vite.config.js ./
@@ -30,12 +30,16 @@ FROM composer:${COMPOSER_VERSION} AS composer-builder
 
 WORKDIR /app
 
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_NO_INTERACTION=1
+
 COPY composer.json composer.lock ./
 
 # Install production deps only (no dev, no scripts)
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
+    --classmap-authoritative \
     --no-interaction \
     --no-scripts \
     --prefer-dist
@@ -114,6 +118,7 @@ COPY --from=frontend-builder /app/public/build ./public/build
 ENV APP_ENV=production \
     APP_DEBUG=false \
     APP_LOCALE=en \
+    TRUSTED_PROXIES= \
     LOG_CHANNEL=stderr \
     SESSION_DRIVER=file \
     CACHE_STORE=file \
@@ -137,5 +142,9 @@ RUN chmod +x /entrypoint.sh \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
 EXPOSE 80
+
+# Container is healthy when Laravel health endpoint is reachable.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD curl -fsS http://127.0.0.1/up || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
