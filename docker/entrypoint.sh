@@ -17,9 +17,19 @@ rm -f bootstrap/cache/*.php
 
 # ─── 2. APP_KEY ────────────────────────────────────────────────────────────────
 if [ -z "${APP_KEY}" ]; then
-    echo "==> Generating APP_KEY..."
-    APP_KEY=$(php artisan key:generate --show --no-interaction)
-    export APP_KEY
+    APP_KEY_FILE="/var/www/html/storage/.app_key"
+
+    if [ -f "${APP_KEY_FILE}" ]; then
+        APP_KEY=$(cat "${APP_KEY_FILE}")
+        export APP_KEY
+        echo "==> Loaded APP_KEY from storage/.app_key"
+    else
+        echo "==> APP_KEY is missing. Generating and persisting to storage/.app_key..."
+        APP_KEY=$(php artisan key:generate --show --no-interaction)
+        export APP_KEY
+        printf "%s" "${APP_KEY}" > "${APP_KEY_FILE}"
+        chmod 600 "${APP_KEY_FILE}"
+    fi
 fi
 
 # ─── 2.5 Ensure framework directories exist ────────────────────────────────────

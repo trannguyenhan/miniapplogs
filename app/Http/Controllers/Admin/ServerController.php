@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Server;
 use App\Services\LogReaderService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 
 class ServerController extends Controller
 {
@@ -120,7 +122,22 @@ class ServerController extends Controller
             }
         }
 
-        $server->update($validated);
+        // Update via query builder to avoid reading/decrypting old corrupted encrypted values.
+        if (array_key_exists('ssh_password', $validated) && !is_null($validated['ssh_password'])) {
+            $validated['ssh_password'] = Crypt::encryptString($validated['ssh_password']);
+        }
+        if (array_key_exists('ssh_private_key', $validated) && !is_null($validated['ssh_private_key'])) {
+            $validated['ssh_private_key'] = Crypt::encryptString($validated['ssh_private_key']);
+        }
+        if (array_key_exists('agent_token', $validated) && !is_null($validated['agent_token'])) {
+            $validated['agent_token'] = Crypt::encryptString($validated['agent_token']);
+        }
+
+        $validated['updated_at'] = now();
+
+        DB::table('servers')
+            ->where('id', $server->id)
+            ->update($validated);
 
         return redirect()->route('admin.servers.index')
             ->with('success', __('app.server_updated', ['name' => $server->name]));

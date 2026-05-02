@@ -86,9 +86,9 @@
 
                     <div class="form-group">
                         <label class="form-label" for="ssh_password">{{ __('app.ssh_password') }}</label>
-                        <input type="password" id="ssh_password" name="ssh_password" class="form-control"
-                               placeholder="{{ $server->ssh_password ? '••••••• (đã lưu — để trống để giữ nguyên)' : 'SSH password' }}">
-                        @if($server->ssh_password)
+                           <input type="password" id="ssh_password" name="ssh_password" class="form-control"
+                               placeholder="{{ $server->getRawOriginal('ssh_password') ? '••••••• (đã lưu — để trống để giữ nguyên)' : 'SSH password' }}">
+                           @if($server->getRawOriginal('ssh_password'))
                             <div class="form-hint" style="color:var(--success);">
                                 <i class="fas fa-check-circle"></i> Password đã lưu. Để trống nếu không muốn thay đổi.
                             </div>
@@ -126,7 +126,7 @@
                             <textarea id="ssh_private_key" name="ssh_private_key" class="form-control" rows="6"
                                 placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;MIIEpAIBAAK...&#10;-----END RSA PRIVATE KEY-----"
                                 style="font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.6;">{{ old('ssh_private_key') }}</textarea>
-                            @if($server->ssh_private_key)
+                            @if($server->getRawOriginal('ssh_private_key'))
                                 <div class="form-hint" style="color:var(--success);">
                                     <i class="fas fa-check-circle"></i> Private key đã lưu. Để trống nếu không muốn thay đổi.
                                 </div>
@@ -162,9 +162,9 @@
                         <label class="form-label" for="agent_token">Agent Token</label>
                         <input type="text" id="agent_token" name="agent_token" class="form-control"
                                value="{{ old('agent_token') }}"
-                               placeholder="{{ $server->agent_token ? '••••••• (đã lưu — để trống để giữ nguyên)' : 'Bearer token xác thực' }}"
+                               placeholder="{{ $server->getRawOriginal('agent_token') ? '••••••• (đã lưu — để trống để giữ nguyên)' : 'Bearer token xác thực' }}"
                                style="font-family:'JetBrains Mono',monospace; font-size:12px;">
-                        @if($server->agent_token)
+                           @if($server->getRawOriginal('agent_token'))
                             <div class="form-hint" style="color:var(--success);">
                                 <i class="fas fa-check-circle"></i> Token đã lưu. Để trống nếu không muốn thay đổi.
                             </div>

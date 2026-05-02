@@ -39,7 +39,6 @@ COPY composer.json composer.lock ./
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
-    --classmap-authoritative \
     --no-interaction \
     --no-scripts \
     --prefer-dist
