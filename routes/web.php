@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Admin\LogApplicationController;
 use App\Http\Controllers\Admin\ServerController;
+use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\SsoController;
 use App\Http\Controllers\LogViewController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +32,10 @@ Route::get('/', function () {
 Route::get('/login',  [LoginController::class, 'showLoginForm'])->name('login')->middleware('guest');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post')->middleware('guest');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+
+// SSO routes
+Route::get('/sso/redirect', [SsoController::class, 'redirect'])->name('sso.redirect')->middleware('guest');
+Route::get('/sso/callback', [SsoController::class, 'callback'])->name('sso.callback')->middleware('guest');
 
 // Authenticated routes
 Route::middleware(['auth'])->group(function () {
@@ -74,5 +80,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}',      [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}',   [UserController::class, 'destroy'])->name('users.destroy');
+
+        // System Settings (SSO configuration)
+        Route::get('/system-settings',  [SystemSettingController::class, 'index'])->name('system-settings.index');
+        Route::put('/system-settings',  [SystemSettingController::class, 'update'])->name('system-settings.update');
+        Route::post('/system-settings/mappings',              [SystemSettingController::class, 'storeMapping'])->name('system-settings.mappings.store');
+        Route::delete('/system-settings/mappings/{mapping}',  [SystemSettingController::class, 'destroyMapping'])->name('system-settings.mappings.destroy');
     });
 });

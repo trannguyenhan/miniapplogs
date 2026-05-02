@@ -609,6 +609,10 @@
                     <i class="fas fa-users"></i>
                     {{ __('app.nav_users') }}
                 </a>
+                <a href="{{ route('admin.system-settings.index') }}" class="nav-item {{ request()->routeIs('admin.system-settings.*') ? 'active' : '' }}">
+                    <i class="fas fa-cog"></i>
+                    {{ __('app.nav_system_settings') }}
+                </a>
             </div>
             @endif
         </nav>

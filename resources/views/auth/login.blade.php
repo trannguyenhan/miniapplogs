@@ -163,6 +163,45 @@
         }
         .lang-switch a:hover { background: #334155; color: #F8FAFC; }
         .lang-switch a.active { background: #22C55E; color: #0F172A; border-color: #22C55E; }
+
+        .sso-divider {
+            display: flex;
+            align-items: center;
+            margin: 18px 0;
+            gap: 12px;
+        }
+        .sso-divider::before, .sso-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #334155;
+        }
+        .sso-divider span {
+            font-size: 12px;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-sso {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3B82F6;
+            border-radius: 6px;
+            padding: 11px;
+            color: #3B82F6;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            letter-spacing: 0.3px;
+        }
+        .btn-sso:hover { background: #3B82F6; color: #F8FAFC; }
     </style>
 </head>
 <body>
@@ -181,10 +220,10 @@
         --}}
 
         <div class="login-card">
-            @if($errors->has('email') || session('status'))
+            @if($errors->has('email') || session('status') || session('error'))
                 <div class="alert-danger">
                     <i class="fas fa-exclamation-circle"></i>
-                    {{ $errors->first('email') ?? session('status') }}
+                    {{ $errors->first('email') ?? session('error') ?? session('status') }}
                 </div>
             @endif
 
@@ -230,6 +269,16 @@
                     {{ __('app.btn_login') }}
                 </button>
             </form>
+
+            @if(!empty($ssoEnabled) && $ssoEnabled)
+            <div class="sso-divider">
+                <span>{{ __('app.or') }}</span>
+            </div>
+            <a href="{{ route('sso.redirect') }}" class="btn-sso">
+                <i class="fas fa-shield-alt" style="margin-right:6px;"></i>
+                {{ __('app.btn_login_sso', ['provider' => $ssoProviderName ?? 'SSO']) }}
+            </a>
+            @endif
         </div>
 
         <div class="footer-note">

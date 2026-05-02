@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -10,6 +11,13 @@ class ProfileController extends Controller
 {
     public function edit()
     {
+        if (SystemSetting::useSsoAccountPages()) {
+            $ssoProfileUrl = SystemSetting::getSsoProfileUrl();
+            if (!empty($ssoProfileUrl)) {
+                return redirect()->away($ssoProfileUrl);
+            }
+        }
+
         return view('profile.edit', ['user' => auth()->user()]);
     }
 
