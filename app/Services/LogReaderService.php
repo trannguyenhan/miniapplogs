@@ -53,7 +53,7 @@ class LogReaderService
     public function runScript(Server $server, string $scriptPath, ?string $projectPath = null): array
     {
         // Build command: cd <project_path> && bash <script>
-        $cmd = 'bash ' . escapeshellarg($scriptPath);
+        $cmd = '(bash ' . escapeshellarg($scriptPath) . ')';
         if (!empty($projectPath)) {
             $cmd = 'cd ' . escapeshellarg($projectPath) . ' && ' . $cmd;
         }

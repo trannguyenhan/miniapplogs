@@ -12,6 +12,14 @@ class LogViewController extends Controller
     public function __construct(private LogReaderService $logReader) {}
 
     /**
+     * Build a command that always executes inside the configured project path.
+     */
+    private function buildProjectCommand(string $projectPath, string $command): string
+    {
+        return 'cd ' . escapeshellarg($projectPath) . ' && (' . $command . ')';
+    }
+
+    /**
      * Trang chủ - danh sách tất cả ứng dụng
      */
     public function index(Request $request)
@@ -148,7 +156,7 @@ class LogViewController extends Controller
             return response()->json(['success' => false, 'error' => 'Project Path chưa được cấu hình. Vui lòng thiết lập Project Path để thực thi lệnh này.']);
         }
 
-        $command = 'cd ' . escapeshellarg($logApp->git_path) . ' && ' . $logApp->restart_command;
+        $command = $this->buildProjectCommand($logApp->git_path, $logApp->restart_command);
         $result = $this->logReader->runCommand($logApp->server, $command);
 
         return response()->json($result);
@@ -178,7 +186,7 @@ class LogViewController extends Controller
             return response()->json(['success' => false, 'error' => 'Project Path chưa được cấu hình. Vui lòng thiết lập Project Path để thực thi lệnh này.']);
         }
 
-        $command = 'cd ' . escapeshellarg($logApp->git_path) . ' && ' . $command;
+        $command = $this->buildProjectCommand($logApp->git_path, $command);
 
         $result = $this->logReader->runCommand($logApp->server, $command);
 
