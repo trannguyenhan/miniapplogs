@@ -98,6 +98,10 @@ class LogViewController extends Controller
             return response()->json(['success' => false, 'error' => 'Ứng dụng này không có script được cấu hình.']);
         }
 
+        if (empty($logApp->git_path) || trim($logApp->git_path) === '') {
+            return response()->json(['success' => false, 'error' => 'Project Path chưa được cấu hình. Vui lòng thiết lập Project Path để thực thi script.']);
+        }
+
         if (!$logApp->canRunScript(auth()->user())) {
             return response()->json(['success' => false, 'error' => 'Bạn không có quyền thực thi script này.'], 403);
         }
@@ -116,8 +120,8 @@ class LogViewController extends Controller
             return response()->json(['success' => false, 'error' => 'Ứng dụng này chưa được cấu hình Git branch.']);
         }
 
-        if (empty($logApp->git_branch) || trim($logApp->git_branch) === '') {
-            return response()->json(['success' => false, 'error' => 'Ứng dụng này chưa được cấu hình Git branch.']);
+        if (empty($logApp->git_path) || trim($logApp->git_path) === '') {
+            return response()->json(['success' => false, 'error' => 'Project Path chưa được cấu hình. Vui lòng thiết lập Project Path để thực thi Git Pull.']);
         }
 
         if (!$logApp->canGitPull(auth()->user())) {
@@ -125,10 +129,8 @@ class LogViewController extends Controller
         }
 
         $noRebase = $request->boolean('no_rebase', false);
-        $gitPath = $logApp->git_path;
 
-        // Nếu không có git_path, để LogReaderService tự động detect trên server
-        $result = $this->logReader->gitPull($logApp->server, $logApp->git_branch, $noRebase, $gitPath, $logApp->log_path);
+        $result = $this->logReader->gitPull($logApp->server, $logApp->git_branch, $noRebase, $logApp->git_path);
 
         return response()->json($result);
     }
@@ -142,10 +144,11 @@ class LogViewController extends Controller
             return response()->json(['success' => false, 'error' => 'Bạn không có quyền thực thi lệnh này.'], 403);
         }
 
-        $command = $logApp->restart_command;
-        if (!empty($logApp->git_path)) {
-            $command = 'cd ' . escapeshellarg($logApp->git_path) . ' && ' . $command;
+        if (empty($logApp->git_path) || trim($logApp->git_path) === '') {
+            return response()->json(['success' => false, 'error' => 'Project Path chưa được cấu hình. Vui lòng thiết lập Project Path để thực thi lệnh này.']);
         }
+
+        $command = 'cd ' . escapeshellarg($logApp->git_path) . ' && ' . $logApp->restart_command;
         $result = $this->logReader->runCommand($logApp->server, $command);
 
         return response()->json($result);
@@ -171,9 +174,11 @@ class LogViewController extends Controller
             return response()->json(['success' => false, 'error' => 'Lệnh trống.']);
         }
 
-        if (!empty($logApp->git_path)) {
-            $command = 'cd ' . escapeshellarg($logApp->git_path) . ' && ' . $command;
+        if (empty($logApp->git_path) || trim($logApp->git_path) === '') {
+            return response()->json(['success' => false, 'error' => 'Project Path chưa được cấu hình. Vui lòng thiết lập Project Path để thực thi lệnh này.']);
         }
+
+        $command = 'cd ' . escapeshellarg($logApp->git_path) . ' && ' . $command;
 
         $result = $this->logReader->runCommand($logApp->server, $command);
 

@@ -619,15 +619,10 @@ class LogReaderService
     // ── Git Pull ────────────────────────────────────────────────────────────────
 
     /**
-     * Thực thi git pull trên server.
+     * Thực thi git pull trên server. Yêu cầu gitPath phải được cấu hình.
      */
-    public function gitPull(Server $server, string $branch, bool $noRebase = false, ?string $gitPath = null, ?string $logPath = null): array
+    public function gitPull(Server $server, string $branch, bool $noRebase = false, string $gitPath = ''): array
     {
-        // Nếu không có git_path, tự động detect từ log_path
-        if (empty($gitPath) && !empty($logPath)) {
-            $gitPath = $this->detectGitPath($server, $logPath);
-        }
-
         if ($server->isLocal()) {
             return $this->gitPullLocal($branch, $noRebase, $gitPath);
         }
@@ -639,53 +634,17 @@ class LogReaderService
         return $this->gitPullAgent($server, $branch, $noRebase, $gitPath);
     }
 
-    /**
-     * Tự động detect thư mục Git repository từ log_path.
-     */
-    protected function detectGitPath(Server $server, string $logPath): ?string
-    {
-        // Ví dụ: /var/www/app/logs/app.log -> /var/www/app
-        $logDir = dirname($logPath);
-        
-        if ($server->isLocal()) {
-            // Local: kiểm tra trực tiếp
-            $path = $logDir;
-            $maxDepth = 5;
-            for ($i = 0; $i < $maxDepth; $i++) {
-                if (is_dir($path . '/.git')) {
-                    return $path;
-                }
-                $parent = dirname($path);
-                if ($parent === $path) break;
-                $path = $parent;
-            }
-        }
-        
-        // SSH/Agent: trả về logDir để server tự detect
-        return $logDir;
-    }
-
-    protected function gitPullLocal(string $branch, bool $noRebase = false, ?string $gitPath = null): array
+    protected function gitPullLocal(string $branch, bool $noRebase = false, string $gitPath = ''): array
     {
         try {
-            // Nếu không có gitPath, thử detect từ thư mục hiện tại
-            if (empty($gitPath)) {
-                $gitPath = getcwd();
-            }
-            
-            // Kiểm tra xem có phải Git repository không
-            if (!is_dir($gitPath . '/.git')) {
-                return ['success' => false, 'error' => "Thư mục không phải Git repository: {$gitPath}"];
-            }
-            
-            $branch = escapeshellarg($branch);
-            $cdCommand = 'cd ' . escapeshellarg($gitPath) . ' && ';
-            $command = $cdCommand . ($noRebase 
-                ? "git pull origin {$branch} --no-rebase 2>&1"
-                : "git pull origin {$branch} 2>&1");
-            
+            $branchEscaped = escapeshellarg($branch);
+            $command = 'cd ' . escapeshellarg($gitPath) . ' && '
+                . ($noRebase
+                    ? "git pull origin {$branchEscaped} --no-rebase 2>&1"
+                    : "git pull origin {$branchEscaped} 2>&1");
+
             $output = shell_exec($command);
-            
+
             if ($output === null) {
                 return ['success' => false, 'error' => 'Không thể thực thi git pull.'];
             }
@@ -697,7 +656,7 @@ class LogReaderService
         }
     }
 
-    protected function gitPullSsh(Server $server, string $branch, bool $noRebase = false, ?string $gitPath = null): array
+    protected function gitPullSsh(Server $server, string $branch, bool $noRebase = false, string $gitPath = ''): array
     {
         try {
             $ssh = $this->makeSshConnection($server);
@@ -706,27 +665,12 @@ class LogReaderService
                 return ['success' => false, 'error' => 'Không thể kết nối SSH tới server.'];
             }
 
-            // Nếu không có gitPath, detect trên remote server
-            if (empty($gitPath)) {
-                $gitPath = '.';
-            }
-            
-            $branch = escapeshellarg($branch);
-            $gitPathEscaped = escapeshellarg($gitPath);
-            
-            // Tìm thư mục Git từ gitPath (có thể là thư mục cha của log)
-            $findGitCmd = "cd {$gitPathEscaped} && while [ ! -d .git ] && [ \"\$(pwd)\" != \"/\" ]; do cd ..; done && pwd";
-            $detectedPath = trim($ssh->exec($findGitCmd));
-            
-            if (empty($detectedPath) || !str_contains($detectedPath, '/')) {
-                return ['success' => false, 'error' => 'Không tìm thấy Git repository. Vui lòng cấu hình git_path.'];
-            }
-            
-            $cdCommand = 'cd ' . escapeshellarg($detectedPath) . ' && ';
-            $command = $cdCommand . ($noRebase 
-                ? "git pull origin {$branch} --no-rebase 2>&1"
-                : "git pull origin {$branch} 2>&1");
-            
+            $branchEscaped = escapeshellarg($branch);
+            $command = 'cd ' . escapeshellarg($gitPath) . ' && '
+                . ($noRebase
+                    ? "git pull origin {$branchEscaped} --no-rebase 2>&1"
+                    : "git pull origin {$branchEscaped} 2>&1");
+
             $output = $ssh->exec($command);
 
             if ($ssh->getExitStatus() !== 0) {
