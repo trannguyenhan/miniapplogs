@@ -736,7 +736,7 @@
 // Custom Modal System
 let modalResolve = null;
 let modalType = 'alert'; // 'alert' or 'confirm'
-const i18n = JSON.parse(document.getElementById('modal-i18n').textContent);
+const modalI18n = JSON.parse(document.getElementById('modal-i18n').textContent);
 
 function showModal(options) {
     const modal = document.getElementById('custom-modal');
@@ -765,7 +765,7 @@ function showModal(options) {
     icon.style.color = iconData.color;
     
     // Set title
-    title.textContent = options.title || i18n.notice;
+    title.textContent = options.title || modalI18n.notice;
     
     // Set message
     message.textContent = options.message || '';
@@ -783,7 +783,7 @@ function showModal(options) {
     // Set buttons
     if (modalType === 'confirm') {
         btnCancel.style.display = '';
-        btnOk.textContent = options.confirmText || i18n.confirm;
+        btnOk.textContent = options.confirmText || modalI18n.confirm;
         btnOk.className = 'btn btn-primary';
     } else {
         btnCancel.style.display = 'none';
@@ -828,7 +828,7 @@ window.alert = function(message, options = {}) {
     return showModal({
         type: 'alert',
         icon: options.icon || 'info',
-        title: options.title || i18n.notice,
+        title: options.title || modalI18n.notice,
         message: message
     });
 };
@@ -842,15 +842,15 @@ window.confirm = function(message, options = {}) {
     return showModal({
         type: 'confirm',
         icon: options.icon || 'question',
-        title: options.title || i18n.confirm,
+        title: options.title || modalI18n.confirm,
         message: message,
-        confirmText: options.confirmText || i18n.confirm,
-        cancelText: options.cancelText || i18n.cancel
+        confirmText: options.confirmText || modalI18n.confirm,
+        cancelText: options.cancelText || modalI18n.cancel
     });
 };
 
 // Helper for success messages
-    window.showSuccess = function(message, title = i18n.success) {
+window.showSuccess = function(message, title = modalI18n.success) {
     return showModal({
         type: 'alert',
         icon: 'success',
@@ -860,7 +860,7 @@ window.confirm = function(message, options = {}) {
 };
 
 // Helper for error messages
-window.showError = function(message, title = i18n.error) {
+window.showError = function(message, title = modalI18n.error) {
     return showModal({
         type: 'alert',
         icon: 'error',
@@ -895,7 +895,7 @@ async function confirmDelete(event, message) {
     event.preventDefault();
     const form = event.target;
     const confirmed = await confirm(message, {
-        title: i18n.confirmDeleteTitle,
+        title: modalI18n.confirmDeleteTitle,
         icon: 'warning'
     });
     if (confirmed) {

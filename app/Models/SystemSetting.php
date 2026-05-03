@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
 
 class SystemSetting extends Model
 {
@@ -26,6 +27,23 @@ class SystemSetting extends Model
         static::updateOrCreate(['key' => $key], ['value' => $value]);
     }
 
+    /**
+     * Đọc giá trị đã mã hóa; fallback plaintext nếu chưa mã hóa (backward compat).
+     */
+    public static function getEncrypted(string $key, mixed $default = null): mixed
+    {
+        $raw = static::get($key, null);
+        if ($raw === null || $raw === '') {
+            return $default;
+        }
+        try {
+            return Crypt::decryptString($raw);
+        } catch (\Throwable) {
+            // Giá trị cũ chưa mã hóa – trả về plaintext, sẽ được ghi đè khi user lưu lại
+            return $raw;
+        }
+    }
+
     public static function getAuthMethod(): string
     {
         return static::get('auth_method', 'local');
@@ -37,7 +55,7 @@ class SystemSetting extends Model
             'provider_name'      => static::get('sso_provider_name', ''),
             'issuer_url'         => static::get('sso_issuer_url', ''),
             'client_id'          => static::get('sso_client_id', ''),
-            'client_secret'      => static::get('sso_client_secret', ''),
+            'client_secret'      => static::getEncrypted('sso_client_secret', ''),
             'scopes'             => static::get('sso_scopes', 'openid profile email'),
             'role_claim'         => static::get('sso_role_claim', 'roles'),
             'default_role'       => static::get('sso_default_role', 'user'),

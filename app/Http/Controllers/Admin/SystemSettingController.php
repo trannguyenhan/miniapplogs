@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SsoRoleMapping;
 use App\Models\SystemSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 
 class SystemSettingController extends Controller
 {
@@ -60,9 +61,9 @@ class SystemSettingController extends Controller
                     SystemSetting::set($field, $request->input($field));
                 }
             }
-            // Only update secret if a new value was provided
+            // Only update secret if a new value was provided – store encrypted
             if ($request->filled('sso_client_secret')) {
-                SystemSetting::set('sso_client_secret', $request->input('sso_client_secret'));
+                SystemSetting::set('sso_client_secret', Crypt::encryptString($request->input('sso_client_secret')));
             }
         }
 
