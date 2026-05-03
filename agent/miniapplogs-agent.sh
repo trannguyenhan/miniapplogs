@@ -203,7 +203,7 @@ handle() {
         # Cho phép chạy nếu là file thường (bash sẽ đọc), không bắt buộc +x nếu ta dùng 'bash path'
         
         local output
-        output=$(bash "$path" 2>&1)
+        output=$(setsid bash "$path" 2>&1)
 
         respond "200 OK" \
             "{\"success\":true,\"output\":\"$(json_str "$output")\"}"
@@ -216,7 +216,7 @@ handle() {
         [[ -z "$cmd" ]] && { respond "400 Bad Request" '{"error":"Missing param: command"}'; return; }
 
         local output
-        output=$(bash -c "$cmd" 2>&1)
+        output=$(setsid bash -c "$cmd" 2>&1)
 
         respond "200 OK" \
             "{\"success\":true,\"output\":\"$(json_str "$output")\"}"

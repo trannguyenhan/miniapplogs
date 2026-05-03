@@ -114,6 +114,8 @@ class LogViewController extends Controller
             return response()->json(['success' => false, 'error' => 'Bạn không có quyền thực thi script này.'], 403);
         }
 
+        ignore_user_abort(true);
+        set_time_limit(0);
         $result = $this->logReader->runScript($logApp->server, $logApp->script_path, $logApp->git_path);
 
         return response()->json($result);
@@ -157,6 +159,8 @@ class LogViewController extends Controller
         }
 
         $command = $this->buildProjectCommand($logApp->git_path, $logApp->restart_command);
+        ignore_user_abort(true);
+        set_time_limit(0);
         $result = $this->logReader->runCommand($logApp->server, $command);
 
         return response()->json($result);
@@ -188,6 +192,8 @@ class LogViewController extends Controller
 
         $command = $this->buildProjectCommand($logApp->git_path, $command);
 
+        ignore_user_abort(true);
+        set_time_limit(0);
         $result = $this->logReader->runCommand($logApp->server, $command);
 
         return response()->json($result);
