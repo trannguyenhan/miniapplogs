@@ -298,4 +298,11 @@ return [
     'sso_userinfo_error'         => 'Không thể lấy thông tin người dùng từ nhà cung cấp SSO.',
     'local_login_disabled'       => 'Đăng nhập local đã bị tắt. Vui lòng dùng nút đăng nhập SSO.',
 
+    'favicon_title'              => 'Favicon',
+    'favicon_file'               => 'File Favicon',
+    'favicon_choose'             => 'Nhấn để chọn file…',
+    'favicon_hint'               => 'Chấp nhận: .ico .png .jpg .gif .svg — Tối đa 512 KB',
+    'favicon_upload'             => 'Tải lên',
+    'favicon_updated'            => 'Favicon đã được cập nhật!',
+
 ];

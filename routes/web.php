@@ -84,6 +84,7 @@ Route::middleware(['auth'])->group(function () {
         // System Settings (SSO configuration)
         Route::get('/system-settings',  [SystemSettingController::class, 'index'])->name('system-settings.index');
         Route::put('/system-settings',  [SystemSettingController::class, 'update'])->name('system-settings.update');
+        Route::post('/system-settings/favicon',               [SystemSettingController::class, 'uploadFavicon'])->name('system-settings.favicon');
         Route::post('/system-settings/mappings',              [SystemSettingController::class, 'storeMapping'])->name('system-settings.mappings.store');
         Route::delete('/system-settings/mappings/{mapping}',  [SystemSettingController::class, 'destroyMapping'])->name('system-settings.mappings.destroy');
     });

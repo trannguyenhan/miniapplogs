@@ -16,6 +16,84 @@
     </div>
 </div>
 
+{{-- Favicon --}}
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <i class="fas fa-image" style="color: var(--warning);"></i>
+        <span class="card-title">{{ __('app.favicon_title') }}</span>
+    </div>
+    <div class="card-body">
+        @php $faviconFile = \App\Models\SystemSetting::get('app_favicon_file', 'favicon.ico'); @endphp
+        <form method="POST" action="{{ route('admin.system-settings.favicon') }}" enctype="multipart/form-data">
+            @csrf
+            <div style="display: flex; align-items: center; gap: 16px;">
+                {{-- Preview box --}}
+                @php $faviconExists = file_exists(public_path($faviconFile)) && $faviconFile !== 'favicon.ico' || file_exists(public_path($faviconFile)); @endphp
+                <div id="favicon-box" style="
+                    width: 64px; height: 64px; flex-shrink: 0;
+                    border-radius: 12px;
+                    border: 1px solid var(--border);
+                    background: var(--bg-primary);
+                    display: flex; align-items: center; justify-content: center;
+                    overflow: hidden;
+                    position: relative;
+                ">
+                    <img src="{{ asset($faviconFile) }}?v={{ filemtime(public_path($faviconFile)) ?: 1 }}"
+                         alt="favicon" id="favicon-preview"
+                         style="width: 40px; height: 40px; object-fit: contain;"
+                         onerror="this.style.display='none'; document.getElementById('favicon-placeholder').style.display='flex';">
+                    <div id="favicon-placeholder" style="
+                        display: none;
+                        position: absolute; inset: 0;
+                        align-items: center; justify-content: center;
+                        flex-direction: column; gap: 2px;
+                    ">
+                        <i class="fas fa-globe" style="font-size: 22px; color: var(--text-muted);"></i>
+                        <span style="font-size: 9px; color: var(--text-muted); letter-spacing: 0.5px;">ICON</span>
+                    </div>
+                </div>
+
+                {{-- Upload area --}}
+                <label for="favicon-input" style="
+                    flex: 1;
+                    display: flex; align-items: center; gap: 12px;
+                    padding: 14px 18px;
+                    border: 1.5px dashed var(--border-light);
+                    border-radius: 10px;
+                    cursor: pointer;
+                    transition: border-color 0.2s, background 0.2s;
+                    background: var(--bg-primary);
+                " onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-dark)'"
+                   onmouseout="this.style.borderColor='var(--border-light)';this.style.background='var(--bg-primary)'">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 20px; color: var(--text-muted);"></i>
+                    <div>
+                        <div id="favicon-filename" style="font-size: 13px; font-weight: 500; color: var(--text-primary);">
+                            {{ __('app.favicon_choose') }}
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                            {{ __('app.favicon_hint') }}
+                        </div>
+                    </div>
+                    <input type="file" id="favicon-input" name="favicon"
+                           accept=".ico,.png,.jpg,.jpeg,.gif,.svg"
+                           onchange="previewFavicon(this)"
+                           style="display: none;">
+                </label>
+
+                <button type="submit" class="btn btn-primary" style="flex-shrink: 0; height: 44px; padding: 0 20px;">
+                    <i class="fas fa-upload"></i> {{ __('app.favicon_upload') }}
+                </button>
+            </div>
+
+            @error('favicon')
+                <div style="color: var(--danger); font-size: 12px; margin-top: 10px;">
+                    <i class="fas fa-exclamation-circle" style="margin-right: 4px;"></i>{{ $message }}
+                </div>
+            @enderror
+        </form>
+    </div>
+</div>
+
 {{-- Authentication Method --}}
 <div class="card" style="margin-bottom: 24px;">
     <div class="card-header">
@@ -225,6 +303,21 @@
 
 @push('scripts')
 <script>
+function previewFavicon(input) {
+    if (input.files && input.files[0]) {
+        var file = input.files[0];
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = document.getElementById('favicon-preview');
+            var placeholder = document.getElementById('favicon-placeholder');
+            img.src = e.target.result;
+            img.style.display = '';
+            placeholder.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+        document.getElementById('favicon-filename').textContent = file.name;
+    }
+}
 document.getElementById('auth-method-select').addEventListener('change', function() {
     const showSso = this.value !== 'local';
     document.getElementById('sso-config').style.display = showSso ? '' : 'none';

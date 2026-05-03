@@ -298,4 +298,11 @@ return [
     'sso_userinfo_error'         => 'Failed to retrieve user information from SSO provider.',
     'local_login_disabled'       => 'Local login is disabled. Please use the SSO button.',
 
+    'favicon_title'              => 'Favicon',
+    'favicon_file'               => 'Favicon File',
+    'favicon_choose'             => 'Click to choose a file…',
+    'favicon_hint'               => 'Accepted: .ico .png .jpg .gif .svg — Max 512 KB',
+    'favicon_upload'             => 'Upload',
+    'favicon_updated'            => 'Favicon updated!',
+
 ];

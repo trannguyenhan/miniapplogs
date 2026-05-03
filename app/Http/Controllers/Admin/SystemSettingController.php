@@ -71,6 +71,30 @@ class SystemSettingController extends Controller
             ->with('success', __('app.settings_updated'));
     }
 
+    public function uploadFavicon(Request $request)
+    {
+        $request->validate([
+            'favicon' => 'required|file|mimes:ico,png,jpg,jpeg,gif,svg|max:512',
+        ]);
+
+        $file = $request->file('favicon');
+        $ext  = strtolower($file->getClientOriginalExtension());
+
+        // Remove old custom favicon if different extension
+        $old = SystemSetting::get('app_favicon_file');
+        if ($old && file_exists(public_path($old)) && $old !== 'favicon.' . $ext) {
+            @unlink(public_path($old));
+        }
+
+        $filename = 'favicon.' . $ext;
+        $file->move(public_path(), $filename);
+
+        SystemSetting::set('app_favicon_file', $filename);
+
+        return redirect()->route('admin.system-settings.index')
+            ->with('success', __('app.favicon_updated'));
+    }
+
     public function storeMapping(Request $request)
     {
         $request->validate([
