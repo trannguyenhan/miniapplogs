@@ -563,7 +563,8 @@ class LogReaderService
     protected function runAgentScript(Server $server, string $scriptPath): array
     {
         try {
-            $request = Http::timeout(60)->withHeaders(['Accept' => 'application/json']);
+            set_time_limit(0);
+            $request = Http::timeout(600)->withHeaders(['Accept' => 'application/json']);
             if ($server->agent_token) $request = $request->withToken($server->agent_token);
             $response = $request->post(rtrim($server->agent_url, '/') . '/execute', [
                 'path' => $scriptPath,
@@ -580,6 +581,7 @@ class LogReaderService
     protected function runLocalCommand(string $command): array
     {
         try {
+            set_time_limit(0);
             $output = shell_exec($command . " 2>&1");
             return ['success' => true, 'output' => $output ?? ''];
         } catch (\Exception $e) {
@@ -602,7 +604,8 @@ class LogReaderService
     protected function runAgentCommand(Server $server, string $command): array
     {
         try {
-            $request = Http::timeout(60)->withHeaders(['Accept' => 'application/json']);
+            set_time_limit(0);
+            $request = Http::timeout(600)->withHeaders(['Accept' => 'application/json']);
             if ($server->agent_token) $request = $request->withToken($server->agent_token);
             $response = $request->post(rtrim($server->agent_url, '/') . '/run-command', [
                 'command' => $command,
