@@ -185,7 +185,7 @@ class LogReaderService
         $ssh = new SSH2(
             $server->ip_address,
             (int) ($server->ssh_port ?? 22),
-            10 // timeout
+            3000 // timeout
         );
 
         $authenticated = false;
